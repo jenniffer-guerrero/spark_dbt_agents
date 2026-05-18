@@ -43,10 +43,14 @@ Quality constraints:
 
 PROMPT B - Natural Prompt for siebel_id_update.ipynb
 
+
 Create notebooks/siebel_id_update.ipynb containing only incremental update logic.
 Expose a reusable function:
 run_incremental_update(spark, source_db='shebang', target_db='shebang', state_db='shebang_state', ...)
 All markdown and code comments must be in English.
+
+Agent interaction requirement:
+This notebook must be able to receive dynamic feedback from the test notebook (notebooks/siebel_id_test.ipynb) after each test case is executed. Based on the success or failure of each test case, the update notebook should adapt its logic, parameters, or state to address failures and reinforce successful behaviors. The update agent must expose an interface or mechanism to accept and process test results, and update its incremental logic accordingly.
 
 I want this notebook to behave like an incremental maintainer of shebang.output.
 Instead of rebuilding everything every run, it should detect what changed, identify impacted parts of the graph, recompute only that subset, and merge safely with untouched rows.
@@ -103,9 +107,13 @@ Behavior constraints:
 
 PROMPT C - Natural Prompt for siebel_id_test.ipynb
 
+
 Create notebooks/siebel_id_test.ipynb as a stateful, case-driven validation notebook for incremental behavior.
 This notebook must load and execute run_incremental_update from notebooks/siebel_id_update.ipynb.
 All markdown and code comments must be in English.
+
+Agent interaction requirement:
+The test notebook must communicate the result (success or failure) of each test case directly to the update notebook agent. The test agent should provide structured feedback after each case, enabling the update agent to adjust its logic, parameters, or state dynamically. This ensures that the update notebook evolves in response to the validation outcomes, supporting a closed feedback loop between test and update agents.
 
 I want this notebook to read like a story of table evolution:
 - start from a known baseline,
