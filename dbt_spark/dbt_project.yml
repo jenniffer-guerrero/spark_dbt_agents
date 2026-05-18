@@ -1,0 +1,13 @@
+name: jguerrero_personal_spark
+version: 1.0.0
+config-version: 2
+
+profile: local_spark_hive
+
+model-paths: ["models"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  jguerrero_personal_spark:
+    +materialized: table

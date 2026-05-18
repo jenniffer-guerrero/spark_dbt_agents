@@ -1,0 +1,184 @@
+PROMPT A - Natural Prompt for siebel_id_origin.ipynb
+
+Create notebooks/siebel_id_origin.ipynb as the baseline (full rebuild) version of the REL_ID mapping process.
+I want this notebook to read the source tables, reconstruct the full relationship graph, and produce a clean, deterministic shebang.output from scratch.
+All notebook markdown and code comments must be in English.
+
+What this notebook should express clearly:
+- This is the full recomputation version (not incremental).
+- It defines the business truth for REL_ID -> REL_ID_REGIE_KLANT.
+- It should be readable enough that someone can understand the business logic without reading external docs.
+
+Business logic to reflect:
+- Sources are:
+  - shebang.direct_bank
+  - shebang.ggm_np
+- Build relationship edges from both systems:
+  - direct_bank: rel_id <-> np_sbl_id
+  - ggm_np: rel_id <-> ikb_no
+- Active REGIE seeds come only from direct_bank rows where:
+  - drc_bnk_f = 'Y'
+  - edl_valid_to_dts is open-ended (starts with 9999-12-31)
+- Expand historical/transitive relations through the graph.
+- If one rel_id is reachable from multiple seeds, assign deterministically:
+  - minimum numeric seed when available
+  - lexical minimum as fallback
+
+Notebook structure (natural and well guided):
+1) Intro markdown: purpose, business rules, expected output schema.
+2) Setup cell: Spark session + Hive/local metastore compatibility.
+3) Source normalization cell: cast keys to string, remove null/blank keys, build unified edges.
+4) Seed selection cell: build active seed set.
+5) Graph expansion cell: compute full reachability from seeds.
+6) Deterministic assignment cell: produce final REL_ID and REL_ID_REGIE_KLANT mapping.
+7) Persist cell: overwrite shebang.output.
+8) Validation cell: show row counts, sample output, and no-duplicate check.
+
+Quality constraints:
+- Deterministic results across reruns.
+- No duplicate output pairs.
+- Code should be modular and easy to explain.
+- Notebook must run top-to-bottom in a fresh kernel.
+
+
+PROMPT B - Natural Prompt for siebel_id_update.ipynb
+
+Create notebooks/siebel_id_update.ipynb containing only incremental update logic.
+Expose a reusable function:
+run_incremental_update(spark, source_db='shebang', target_db='shebang', state_db='shebang_state', ...)
+All markdown and code comments must be in English.
+
+I want this notebook to behave like an incremental maintainer of shebang.output.
+Instead of rebuilding everything every run, it should detect what changed, identify impacted parts of the graph, recompute only that subset, and merge safely with untouched rows.
+
+Logic story to implement:
+1) Build the current picture from sources
+- Read direct_bank and ggm_np.
+- Build normalized current edges and current active seeds.
+
+2) Compare with previous run state
+- Load state snapshots:
+  - edge_snapshot
+  - seed_snapshot
+  - seed_membership
+- Detect deltas (added/removed edges and seeds).
+
+3) Define impact boundary
+- Build impact start points from changed nodes and rows linked to removed seeds.
+- Expand only impacted connected components.
+
+4) Recompute only impacted mappings
+- Recompute seed reachability for impacted scope.
+- Apply deterministic winner rule:
+  - min numeric seed, fallback lexical.
+
+5) Merge, enforce, persist
+- Keep unimpacted output rows unchanged.
+- Replace impacted rows with recomputed values.
+- Keep only currently active seeds in final output.
+- Persist output and state snapshots using staging-table swap writes.
+
+6) Return observability
+- Return stats:
+  - changed_edges
+  - added_seeds
+  - removed_seeds
+  - impacted_rel_ids
+  - output_rows
+
+Notebook sections to include:
+- Intro markdown.
+- Utility helpers (empty checks, swaps, fallback mutation, checkpoint helper).
+- Graph helper functions.
+- State/bootstrap table creation.
+- Main run_incremental_update function with explicit phase comments.
+- Final documentation/flow diagram (text or Mermaid).
+
+Behavior constraints:
+- Idempotent when no source changes occur.
+- Deterministic output across reruns.
+- Clear cache after writes to avoid stale plans.
+- Defensive behavior for local Spark/Hive runtime constraints.
+
+
+PROMPT C - Natural Prompt for siebel_id_test.ipynb
+
+Create notebooks/siebel_id_test.ipynb as a stateful, case-driven validation notebook for incremental behavior.
+This notebook must load and execute run_incremental_update from notebooks/siebel_id_update.ipynb.
+All markdown and code comments must be in English.
+
+I want this notebook to read like a story of table evolution:
+- start from a known baseline,
+- apply one mutation at a time,
+- run incremental update,
+- validate exact output deltas,
+- and show full table state after each case.
+
+Design intent:
+- Keep one markdown + one code cell per case.
+- Use the same shebang tables through the full sequence.
+- Allow full replay by resetting to captured baseline snapshots.
+
+Required logic blocks:
+1) Setup/harness block
+- Configure Spark runtime.
+- Load code cells from siebel_id_update.ipynb via JSON loading (no nbformat dependency).
+- Ensure run_incremental_update is available.
+
+2) Baseline management block
+- Ensure source/output tables exist.
+- Snapshot and restore helpers.
+- reset_sequence_to_baseline() that also clears state_db snapshots.
+
+3) Assertion and display block
+- pair_set helper for output.
+- assert_delta helper with inserted/removed comparison.
+- assert_output_has_no_duplicates helper.
+- show_case_tables(case_name) must display full direct_bank, ggm_np, and output without filters.
+
+4) Initialization block
+- Reset to baseline.
+- Run one initial incremental sync.
+- Show baseline tables and stats.
+
+5) Sequential case blocks (at least 8)
+Include these scenarios:
+- Case 1: insert new active seed in direct_bank.
+- Case 2: flip existing seed Y -> N.
+- Case 3: reassign ggm_np rel_id for an existing identifier.
+- Case 4: no-change idempotent rerun.
+- Case 5: add a new identifier to an existing rel_id.
+- Case 6: duplicate source row should not duplicate output.
+- Case 7: add new rel_id using an existing identifier.
+- Case 8: simultaneous cross-table insertions sharing one identifier.
+
+For every case:
+- Capture prev pairs.
+- Apply mutation.
+- Run incremental update.
+- Capture current pairs.
+- Show full tables.
+- Assert expected inserted/removed deltas.
+- Assert output uniqueness.
+
+Testing constraints:
+- Deterministic and replayable.
+- Safe fallback mutation path when SQL UPDATE is unsupported.
+- Clear pass/fail output per case.
+
+
+PROMPT D - Natural End-to-End Consistency Prompt
+
+Review and align these notebooks with minimal edits:
+- notebooks/siebel_id_origin.ipynb
+- notebooks/siebel_id_update.ipynb
+- notebooks/siebel_id_test.ipynb
+
+What to validate:
+- Naming consistency in notebook titles and cross-notebook references.
+- Test notebook loads update notebook from the correct path.
+- Deterministic winner rule is consistent between origin and update logic.
+- Output schema is consistent everywhere.
+- No duplicate output pairs.
+- Baseline reset and state snapshot handling are reliable and repeatable.
+- Comments and markdown remain in English.

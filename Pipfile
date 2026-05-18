@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+dbt-spark = {version = ">=1.9.0, <1.9.4", extras = ["pyhive"]}
+dbt-core = ">=1.10.1, <1.10.10"
+pandas = "==2.2.3"
+pyspark = "==3.4.1"
+pyarrow = ">=17.0.0, <18"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"

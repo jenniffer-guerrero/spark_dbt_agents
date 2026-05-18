@@ -1,0 +1,20 @@
+.venv/
+.local/
+.pytest_cache/
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store
+
+# Local Spark/Derby state
+derby.log
+metastore_db/
+spark-warehouse/
+logs/
+
+# dbt local artifacts
+.dbt/logs/
+dbt_spark/logs/
+dbt_spark/target/
+dbt_spark/dbt_packages/
+dbt_spark/metastore_db/
+dbt_spark/spark-warehouse/

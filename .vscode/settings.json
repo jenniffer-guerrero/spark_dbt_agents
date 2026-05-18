@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^command -v brew && brew --version$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
