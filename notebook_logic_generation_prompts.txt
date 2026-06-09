@@ -1,192 +1,174 @@
-PROMPT A - Natural Prompt for siebel_id_origin.ipynb
+== PURPOSE ==
 
-Create notebooks/siebel_id_origin.ipynb as the baseline (full rebuild) version of the REL_ID mapping process.
-I want this notebook to read the source tables, reconstruct the full relationship graph, and produce a clean, deterministic shebang.output from scratch.
-All notebook markdown and code comments must be in English.
+These prompts recreate the three notebooks from scratch.
+Run them after agent_creation_prompts.txt has been fully executed (agents and
+skills files are in place). Run in order: A → B → C → D.
 
-What this notebook should express clearly:
-- This is the full recomputation version (not incremental).
-- It defines the business truth for REL_ID -> REL_ID_REGIE_KLANT.
-- It should be readable enough that someone can understand the business logic without reading external docs.
+All skill definitions, protocols, schemas, and patterns are in `.agent-skills.md`.
+Prompts reference them by name and do not repeat their content.
 
-Business logic to reflect:
-- Sources are:
-  - shebang.direct_bank
-  - shebang.ggm_np
-- Build relationship edges from both systems:
-  - direct_bank: rel_id <-> np_sbl_id
-  - ggm_np: rel_id <-> ikb_no
-- Active REGIE seeds come only from direct_bank rows where:
-  - drc_bnk_f = 'Y'
-  - edl_valid_to_dts is open-ended (starts with 9999-12-31)
-- Expand historical/transitive relations through the graph.
-- If one rel_id is reachable from multiple seeds, assign deterministically:
-  - minimum numeric seed when available
-  - lexical minimum as fallback
 
-Notebook structure (natural and well guided):
-1) Intro markdown: purpose, business rules, expected output schema.
-2) Setup cell: Spark session + Hive/local metastore compatibility.
-3) Source normalization cell: cast keys to string, remove null/blank keys, build unified edges.
-4) Seed selection cell: build active seed set.
-5) Graph expansion cell: compute full reachability from seeds.
-6) Deterministic assignment cell: produce final REL_ID and REL_ID_REGIE_KLANT mapping.
-7) Persist cell: overwrite shebang.output.
-8) Validation cell: show row counts, sample output, and no-duplicate check.
+== CONTEXT FOR ALL PROMPTS ==
+
+Before starting any prompt, read:
+  .agent-skills.md                                 — all skill definitions
+  .github/agents/data-engineer-analytics.agent.md — engineering conventions
+  .github/agents/test_data.agent.md               — test feedback interface
+
+Sample fixtures (canonical baseline for all test cases):
+  use_cases/siebel_id/input/direct_bank.csv
+    columns: rel_id, edl_valid_from_dts, edl_valid_to_dts, np_sbl_id, drc_bnk_f
+  use_cases/siebel_id/input/ggm_np.csv
+    columns: rel_id, edl_valid_from_dts, edl_valid_to_dts, ikb_no, del_f
+  use_cases/siebel_id/input/output.csv
+    columns: REL_ID, REL_ID_REGIE_KLANT
+    (expected mapping result for the fixture data above)
+
+These fixtures must seed the shebang tables so that any clone of the repository
+can run the full test sequence without external data.
+
+
+== PROMPT A — Create notebooks/siebel_id_origin.ipynb ==
+
+Create the full-rebuild baseline notebook. All markdown and code comments in English.
+
+Purpose: define the business truth for REL_ID -> REL_ID_REGIE_KLANT from scratch.
+This notebook is not incremental — it recomputes the full output every run.
+
+Notebook cells in this order:
+
+  1. Markdown — intro: purpose, business rules summary, output schema.
+  2. Code — Spark session setup (apply spark_runtime_reliability: local metastore constraints).
+  3. Code — source normalization: read direct_bank and ggm_np, cast keys to string,
+             drop nulls and blanks, build unified edge list
+             (apply incremental_mapping: source tables and edge schema).
+  4. Code — seed selection: build active seed set
+             (apply incremental_mapping: seed_rule).
+  5. Code — graph expansion: full BFS reachability from all active seeds
+             (apply incremental_mapping: bfs_parameters).
+  6. Code — deterministic assignment: apply winner_rule per rel_id
+             (apply incremental_mapping: winner_rule).
+  7. Code — persist: overwrite shebang.output
+             (apply spark_runtime_reliability: staging_swap_pattern).
+  8. Code — validation: row count, sample output, duplicate check, compare a
+             sample against use_cases/siebel_id/input/output.csv.
 
 Quality constraints:
-- Deterministic results across reruns.
-- No duplicate output pairs.
-- Code should be modular and easy to explain.
-- Notebook must run top-to-bottom in a fresh kernel.
+  - Deterministic across reruns.
+  - No duplicate REL_ID in output.
+  - Runs top-to-bottom in a fresh kernel.
 
 
-PROMPT B - Natural Prompt for siebel_id_update.ipynb
+== PROMPT B — Create notebooks/siebel_id_update.ipynb ==
+
+Create the incremental update notebook. All markdown and code comments in English.
+
+Expose one public entrypoint:
+  run_incremental_update(
+      spark,
+      source_db='shebang',
+      target_db='shebang',
+      state_db='shebang_state',
+      max_iter=40,
+      checkpoint_every=2,
+      show_samples=False,
+      checkpoint_dir=None,
+      test_feedback=None,       # dict | None — log and continue, do not raise
+  ) -> dict                     # returns observability_dict from incremental_mapping
+
+Implement all six phases from .agent-skills.md / incremental_mapping in order.
+For each phase, add a markdown-style comment block naming the phase.
+
+Also expose at module level:
+  reload_update_logic(namespace: dict) -> None
+  (full implementation in .agent-skills.md / notebook_engineering: reload_utility)
+
+Helper functions to include (all defined in .agent-skills.md):
+  _has_rows           — spark_runtime_reliability: empty_check
+  overwrite_table_with_staging_swap — spark_runtime_reliability: staging_swap_pattern
+  _checkpoint         — spark_runtime_reliability: checkpointing
+  expand_rel_component — incremental_mapping: phase 3 BFS
+  expand_seed_pairs    — incremental_mapping: phase 4 BFS
+  _ensure_tables       — incremental_mapping: state_tables (bootstrap if missing)
+
+Notebook cells in this order:
+  1. Markdown — intro: purpose, scope, memory-safety notes.
+  2. Markdown — flow diagram (text or Mermaid) matching the six phases.
+  3. Code — imports and utility helpers.
+  4. Code — BFS graph helpers (expand_rel_component, expand_seed_pairs).
+  5. Code — _ensure_tables.
+  6. Code — run_incremental_update (all six phases, explicit phase comments).
+  7. Code — reload_update_logic.
+
+Behaviour constraints:
+  - Idempotent when no source changes occur.
+  - Deterministic output across reruns.
+  - Runs top-to-bottom in a fresh kernel.
 
 
-Create notebooks/siebel_id_update.ipynb containing only incremental update logic.
-Expose a reusable function:
-run_incremental_update(spark, source_db='shebang', target_db='shebang', state_db='shebang_state', ...)
-All markdown and code comments must be in English.
+== PROMPT C — Create notebooks/siebel_id_test.ipynb ==
 
-Agent interaction requirement:
-This notebook must be able to receive dynamic feedback from the test notebook (notebooks/siebel_id_test.ipynb) after each test case is executed. Based on the success or failure of each test case, the update notebook should adapt its logic, parameters, or state to address failures and reinforce successful behaviors. The update agent must expose an interface or mechanism to accept and process test results, and update its incremental logic accordingly.
+Create the stateful test notebook. All markdown and code comments in English.
+This notebook loads and calls run_incremental_update from siebel_id_update.ipynb.
 
-I want this notebook to behave like an incremental maintainer of shebang.output.
-Instead of rebuilding everything every run, it should detect what changed, identify impacted parts of the graph, recompute only that subset, and merge safely with untouched rows.
+Baseline data:
+  Load use_cases/siebel_id/input/direct_bank.csv → shebang.direct_bank
+  Load use_cases/siebel_id/input/ggm_np.csv → shebang.ggm_np
+  Use use_cases/siebel_id/input/output.csv to validate the initial sync result.
 
-Logic story to implement:
-1) Build the current picture from sources
-- Read direct_bank and ggm_np.
-- Build normalized current edges and current active seeds.
+Notebook cells in this order:
 
-2) Compare with previous run state
-- Load state snapshots:
-  - edge_snapshot
-  - seed_snapshot
-  - seed_membership
-- Detect deltas (added/removed edges and seeds).
+  1. Markdown — intro: purpose, how to run, how to reset.
+  2. Code — setup: Spark runtime, load siebel_id_update.ipynb via JSON loading
+            (apply notebook_engineering: json_loading). Confirm run_incremental_update
+            is callable.
+  3. Code — baseline management: load fixture CSVs, snapshot_baseline,
+            restore_baseline, reset_sequence_to_baseline
+            (apply stateful_test_design: baseline_management).
+  4. Code — assertion helpers: pair_set, assert_delta, assert_output_has_no_duplicates,
+            make_feedback, show_case_tables
+            (apply stateful_test_design: required_helpers).
+  5. Code — repair helpers: call_repair_agent, reload_update_logic reference
+            (apply agent_repair_protocol: call_repair_agent from .agent-skills.md).
+  6. Code — initialization: reset_sequence_to_baseline, run initial sync, validate
+            against output.csv, show baseline tables and stats.
 
-3) Define impact boundary
-- Build impact start points from changed nodes and rows linked to removed seeds.
-- Expand only impacted connected components.
+  Then for each of the 8 cases below, one markdown cell (case name + what changes +
+  expected delta) followed by one code cell (mutation + full per_case_sequence from
+  .agent-skills.md / stateful_test_design, including repair loop on logic_defect):
 
-4) Recompute only impacted mappings
-- Recompute seed reachability for impacted scope.
-- Apply deterministic winner rule:
-  - min numeric seed, fallback lexical.
+  Case 1: Insert new active seed in direct_bank.
+  Case 2: Flip existing seed drc_bnk_f Y -> N.
+  Case 3: Reassign ggm_np rel_id for an existing ikb_no.
+  Case 4: No-change idempotent rerun (expect zero delta).
+  Case 5: Add new ikb_no to an existing rel_id.
+  Case 6: Insert duplicate source row — output must not gain a duplicate pair.
+  Case 7: Add new rel_id linked to an existing ikb_no already used by another rel_id.
+  Case 8: Simultaneous insertions in both direct_bank and ggm_np sharing one identifier.
 
-5) Merge, enforce, persist
-- Keep unimpacted output rows unchanged.
-- Replace impacted rows with recomputed values.
-- Keep only currently active seeds in final output.
-- Persist output and state snapshots using staging-table swap writes.
+  For the markdown cell of each case, derive and write the expected_inserted and
+  expected_removed pairs from the fixture data before the code cell runs.
 
-6) Return observability
-- Return stats:
-  - changed_edges
-  - added_seeds
-  - removed_seeds
-  - impacted_rel_ids
-  - output_rows
-
-Notebook sections to include:
-- Intro markdown.
-- Utility helpers (empty checks, swaps, fallback mutation, checkpoint helper).
-- Graph helper functions.
-- State/bootstrap table creation.
-- Main run_incremental_update function with explicit phase comments.
-- Final documentation/flow diagram (text or Mermaid).
-
-Behavior constraints:
-- Idempotent when no source changes occur.
-- Deterministic output across reruns.
-- Clear cache after writes to avoid stale plans.
-- Defensive behavior for local Spark/Hive runtime constraints.
+Constraints:
+  - Fully replayable via reset_sequence_to_baseline().
+  - All source mutations use staging-swap (spark_runtime_reliability).
+  - Clear pass / fail / unresolved printed per case.
 
 
-PROMPT C - Natural Prompt for siebel_id_test.ipynb
+== PROMPT D — End-to-end consistency review ==
 
+Read all three notebooks and align with minimal edits. Do not change business logic
+or function signatures — fix only naming, path references, and schema mismatches.
 
-Create notebooks/siebel_id_test.ipynb as a stateful, case-driven validation notebook for incremental behavior.
-This notebook must load and execute run_incremental_update from notebooks/siebel_id_update.ipynb.
-All markdown and code comments must be in English.
-
-Agent interaction requirement:
-The test notebook must communicate the result (success or failure) of each test case directly to the update notebook agent. The test agent should provide structured feedback after each case, enabling the update agent to adjust its logic, parameters, or state dynamically. This ensures that the update notebook evolves in response to the validation outcomes, supporting a closed feedback loop between test and update agents.
-
-I want this notebook to read like a story of table evolution:
-- start from a known baseline,
-- apply one mutation at a time,
-- run incremental update,
-- validate exact output deltas,
-- and show full table state after each case.
-
-Design intent:
-- Keep one markdown + one code cell per case.
-- Use the same shebang tables through the full sequence.
-- Allow full replay by resetting to captured baseline snapshots.
-
-Required logic blocks:
-1) Setup/harness block
-- Configure Spark runtime.
-- Load code cells from siebel_id_update.ipynb via JSON loading (no nbformat dependency).
-- Ensure run_incremental_update is available.
-
-2) Baseline management block
-- Ensure source/output tables exist.
-- Snapshot and restore helpers.
-- reset_sequence_to_baseline() that also clears state_db snapshots.
-
-3) Assertion and display block
-- pair_set helper for output.
-- assert_delta helper with inserted/removed comparison.
-- assert_output_has_no_duplicates helper.
-- show_case_tables(case_name) must display full direct_bank, ggm_np, and output without filters.
-
-4) Initialization block
-- Reset to baseline.
-- Run one initial incremental sync.
-- Show baseline tables and stats.
-
-5) Sequential case blocks (at least 8)
-Include these scenarios:
-- Case 1: insert new active seed in direct_bank.
-- Case 2: flip existing seed Y -> N.
-- Case 3: reassign ggm_np rel_id for an existing identifier.
-- Case 4: no-change idempotent rerun.
-- Case 5: add a new identifier to an existing rel_id.
-- Case 6: duplicate source row should not duplicate output.
-- Case 7: add new rel_id using an existing identifier.
-- Case 8: simultaneous cross-table insertions sharing one identifier.
-
-For every case:
-- Capture prev pairs.
-- Apply mutation.
-- Run incremental update.
-- Capture current pairs.
-- Show full tables.
-- Assert expected inserted/removed deltas.
-- Assert output uniqueness.
-
-Testing constraints:
-- Deterministic and replayable.
-- Safe fallback mutation path when SQL UPDATE is unsupported.
-- Clear pass/fail output per case.
-
-
-PROMPT D - Natural End-to-End Consistency Prompt
-
-Review and align these notebooks with minimal edits:
-- notebooks/siebel_id_origin.ipynb
-- notebooks/siebel_id_update.ipynb
-- notebooks/siebel_id_test.ipynb
-
-What to validate:
-- Naming consistency in notebook titles and cross-notebook references.
-- Test notebook loads update notebook from the correct path.
-- Deterministic winner rule is consistent between origin and update logic.
-- Output schema is consistent everywhere.
-- No duplicate output pairs.
-- Baseline reset and state snapshot handling are reliable and repeatable.
-- Comments and markdown remain in English.
+Checklist:
+  - Notebook titles and cross-references use consistent names and relative paths.
+  - Test notebook loads update notebook from 'notebooks/siebel_id_update.ipynb'.
+  - Winner rule is identical between origin and update notebooks.
+  - Output schema (REL_ID, REL_ID_REGIE_KLANT) is consistent everywhere.
+  - No duplicate REL_ID in output.
+  - Fixture path use_cases/siebel_id/input/ is referenced consistently.
+  - reset_sequence_to_baseline clears all three state_db tables.
+  - test_feedback parameter signature matches feedback_schema in .agent-skills.md.
+  - call_repair_agent signature matches agent_repair_protocol in .agent-skills.md.
+  - All markdown and code comments are in English.
+  - staging-swap pattern is used for every table write.

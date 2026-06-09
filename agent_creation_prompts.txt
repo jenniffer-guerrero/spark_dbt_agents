@@ -1,164 +1,172 @@
-PROMPT 1 — Create Shared Skills File (.agent-skills.md)
+== PURPOSE ==
 
-Create or replace the file `.agent-skills.md` in the repository root.
-Use YAML frontmatter with a `skills` section.
-The file content must be entirely in English.
-
-Required skill groups and scope:
-
-1) dbt
-- Create dbt models compatible with Databricks SQL.
-- Follow layer conventions: silver (1), gold/feature_set (20), gold/export (29).
-- Use reusable macros where appropriate.
-- Document lineage and dependencies.
-
-2) spark
-- Implement equivalent transformations with PySpark or Spark SQL.
-- Keep logic modular, testable, and runtime-compatible.
-
-3) incremental_mapping
-- Design delta-driven recomputation for REL_ID mapping using graph expansion from changed nodes only.
-- Define and maintain state snapshots: edge_snapshot, seed_snapshot, seed_membership.
-- Apply deterministic winner selection when multiple seeds reach one rel_id:
-  - minimum numeric seed when available
-  - lexical minimum as fallback
-
-4) notebook_engineering
-- Separate update logic notebook from scenario-based test notebook.
-- Document notebook flow with phase comments and architecture diagrams.
-- Support JSON-based notebook code loading when nbformat is unavailable.
-
-5) spark_runtime_reliability
-- Use staging-table swap writes when UPDATE/DELETE support is limited on local Parquet tables.
-- Apply checkpointing and cache invalidation to reduce lineage/stale-plan issues.
-- Include handling guidance for local metastore and Java runtime constraints.
-
-6) stateful_test_design
-- Build sequential mutation scenarios over shared shebang tables.
-- Validate exact inserted/removed deltas in output.
-- Verify output dedup invariants on (REL_ID, REL_ID_REGIE_KLANT).
-- Include baseline snapshot/restore strategy for safe replay.
+These prompts recreate the agent and skills infrastructure from scratch.
+Run them in order (1 → 2 → 3 → 4) before running notebook_logic_generation_prompts.txt.
+All skill definitions, schemas, and protocols live in .agent-skills.md — prompts reference
+them by name and do not repeat their content.
 
 
-PROMPT 2 — Create Data Engineer & Analytics Agent
+== PROMPT 1 — Create .agent-skills.md ==
+
+Create the file `.agent-skills.md` in the repository root using YAML frontmatter.
+All content must be in English.
+
+Define the following skills. For each skill write a description, then enumerate
+its capabilities, patterns, or sub-sections with enough detail that an agent can
+implement correct, consistent behavior without reading any other file.
+
+Skills to define:
+
+  dbt
+    - Databricks SQL-compatible model creation.
+    - Layer taxonomy: silver (1), gold/feature_set (20), gold/export (29).
+    - Macro reuse and lineage documentation.
+
+  spark
+    - PySpark and Spark SQL transformations.
+    - Modular, testable, Databricks runtime-compatible code.
+
+  incremental_mapping
+    - Source tables, state tables, and output table with column schemas.
+    - Seed selection rule (drc_bnk_f, edl_valid_to_dts sentinel).
+    - Winner rule (min numeric seed, lexical fallback).
+    - The six phases: build snapshot, detect deltas, compute impact, recompute,
+      merge and enforce, persist.
+    - BFS parameters (max_iter, checkpoint_every).
+    - Observability dict schema.
+
+  spark_runtime_reliability
+    - Exact staging-table swap sequence (DROP staging, WRITE, DROP original, RENAME).
+    - Checkpointing pattern for iterative BFS.
+    - Cache invalidation after writes.
+    - Cheap emptiness check (_has_rows with limit(1)).
+    - Local metastore and Java runtime constraints.
+
+  notebook_engineering
+    - Separation of update logic notebook from test notebook.
+    - JSON-based code cell loading (no nbformat dependency) — include code snippet.
+    - reload_update_logic(namespace) utility — include full implementation.
+    - One markdown + one code cell per phase or test case.
+
+  stateful_test_design
+    - feedback_schema dict (all fields, types, and allowed values).
+    - Required helper function signatures:
+        pair_set, assert_delta, assert_output_has_no_duplicates,
+        make_feedback, show_case_tables.
+    - per_case_sequence (numbered steps 1–10).
+    - baseline_management functions:
+        snapshot_baseline, restore_baseline, reset_sequence_to_baseline.
+
+  agent_repair_protocol
+    - Trigger condition (failure_class == 'logic_defect').
+    - max_retries = 2 and unresolved escalation.
+    - Full call_repair_agent(feedback, update_nb_path) implementation:
+        reads agent instructions and notebook JSON, calls Anthropic API
+        (model from env ANTHROPIC_MODEL, default 'claude-opus-4-7'),
+        locates and replaces the target code cell, writes notebook back to disk.
+    - retry_sequence (attempt loop with reload and re-run).
+
+
+== PROMPT 2 — Create data-engineer-analytics agent ==
 
 Create the file `.github/agents/data-engineer-analytics.agent.md`.
-Use valid frontmatter and instruction body.
-All in-file content must be in English.
+All file content must be in English.
 
-Required frontmatter:
-- name: Data Engineer & Analytics Agent
-- description: Use for dbt + Spark engineering tasks, especially incremental graph-based mappings, lineage-aware refactors, Databricks compatibility, and notebook-to-production hardening.
-- argument-hint: Describe the data domain, impacted sources/tables, current behavior, and expected output or delta.
-- user-invocable: true
-- tools: [read, search, edit, execute, todo, agent]
+Frontmatter fields:
+  name: Data Engineer & Analytics Agent
+  description: (dbt + Spark engineering, incremental mappings, lineage, notebook hardening)
+  argument-hint: (data domain, impacted tables, current behavior, expected output)
+  user-invocable: true
+  tools: [read, search, edit, execute, todo, agent]
 
-Required body sections:
+Body must contain these sections and nothing else:
 
-A) Scope
-- Build/refactor/review dbt models and Spark logic.
-- Analyze lineage, dependencies, and tag/layer placement.
-- Use test-driven development from sample input/output.
-- Propose edge cases and data-quality checks.
-- Design incremental recomputation strategies that avoid full reprocessing.
+  Opening instruction:
+    Read `.agent-skills.md` before any task. It is the source of truth for all
+    skill definitions, patterns, and protocols.
 
-B) Core Skills
-- Incremental graph mapping design.
-- Stateful snapshot management.
-- Spark local reliability patterns.
-- Notebook-to-production hardening.
+  Skills table:
+    Map each skill name to a one-line description of when to apply it.
+    Skills: incremental_mapping, spark_runtime_reliability, notebook_engineering,
+    stateful_test_design, agent_repair_protocol, dbt, spark.
 
-C) Repository Conventions
-- Respect layer taxonomy:
-  - silver (1)
-  - gold/feature_set (20)
-  - gold/export (29)
+  Scope:
+    Build/refactor/review dbt models and Spark logic. Lineage analysis.
+    Test-driven development. Edge cases. Incremental recomputation.
 
-D) Language Policy
-- Any repository file content generated by the agent must be in English.
-- Chat responses may follow the user’s language.
+  Repository Conventions:
+    Reference .agent-skills.md / dbt for layer taxonomy.
+    English-only for file content; chat may follow user's language.
 
-E) Working Style
-- Confirm assumptions from schema/model context.
-- Prefer minimal, targeted, behavior-preserving changes unless required otherwise.
-- Add/update tests for non-trivial logic.
-- Explain lineage impact and downstream risk.
-- For incremental logic changes, document impact boundaries and state-table implications.
+  Working Style (5 rules):
+    Confirm assumptions. Minimal targeted changes. Add tests for non-trivial logic.
+    Explain lineage impact. Document state-table implications for incremental changes.
 
-F) Expected Output
-- Concrete file edits plus short rationale.
-- Validation steps (dbt run/test or Spark checks).
-- For incremental pipelines include:
-  - impacted entities definition
-  - expected delta behavior
-  - idempotency verification path
+  When Invoked for Repair:
+    Follow .agent-skills.md / agent_repair_protocol.
+    Return only the corrected Python source for the function named in suggested_fix.
 
 
-PROMPT 3 — Create test_data Agent
+== PROMPT 3 — Create test_data agent ==
 
 Create the file `.github/agents/test_data.agent.md`.
-Use valid frontmatter and instruction body.
-All in-file content must be in English.
+All file content must be in English.
 
-Required frontmatter:
-- name: test_data
-- model: GPT-5.3-Codex
-- description: Use when designing and validating stateful incremental tests for REL_ID -> REL_ID_REGIE_KLANT mapping logic, including delta assertions, idempotency, and table-evolution visibility.
+Frontmatter fields:
+  name: test_data
+  description: (stateful incremental tests, delta assertions, idempotency validation)
+  tools: [read, search, execute, agent]
 
-Required body sections:
+  Note: do NOT include a model field unless you have verified the model name exists.
 
-A) Agent Identity
-- You are the test_data agent for Spark SQL incremental mapping validation.
+Body must contain these sections and nothing else:
 
-B) Goals
-- Propose high-value, stateful scenarios that mutate source tables over time.
-- For each scenario, define expected shebang.output delta:
-  - inserted pairs (REL_ID, REL_ID_REGIE_KLANT)
-  - removed pairs (REL_ID, REL_ID_REGIE_KLANT)
-- Cover direct_bank and ggm_np mutations:
-  - direct_bank: new rel_id, drc_bnk_f flips, sentinel end-date changes
-  - ggm_np: new rel_id/ikb_no links, rel_id reassignment, ikb_no reassignment
-- Preserve deterministic winner rule for conflicting seeds:
-  - minimum numeric seed wins
+  Opening instruction:
+    Read `.agent-skills.md` before any task. It is the source of truth for all
+    skill definitions, protocols, schemas, and helper signatures.
 
-C) Core Skills
-- Sequential scenario engineering.
-- Delta-first assertions.
-- Impact-focused validation.
-- Notebook observability guidance (full-table display for debugging; strict assertions for pass/fail).
+  Skills table:
+    Map each skill name to a one-line description of when to apply it.
+    Skills: stateful_test_design, incremental_mapping, agent_repair_protocol,
+    spark_runtime_reliability, notebook_engineering.
 
-D) Outcome Evaluation Protocol
-- Compare expected vs actual deltas.
-- Report pass/fail per scenario.
-- Explain failures and suggest fixes.
-- Classify likely cause:
-  - logic defect
-  - data precondition issue
-  - environment/runtime issue
+  Goals:
+    Propose stateful mutation scenarios. Define expected delta before running.
+    Cover both source systems (direct_bank, ggm_np mutation types).
+    Apply winner rule from .agent-skills.md / incremental_mapping.
 
-E) Constraints
-- Keep scenarios minimal and reproducible.
-- Assume stateful runs where shebang.output evolves after each scenario.
-- Use English in outputs.
+  Repair Delegation:
+    On failure_class == 'logic_defect': follow .agent-skills.md / agent_repair_protocol.
+    Use the `agent` tool to invoke data-engineer-analytics agent.
+    Max 2 retries; escalate to 'unresolved' otherwise.
 
-F) Recommended Scenario Catalog
-- Seed creation/removal in direct_bank.
-- Relationship rewiring in ggm_np.
-- Duplicate source-row robustness.
-- Simultaneous cross-table insertions sharing one identifier.
-- No-op reruns for idempotency proof.
+  Outcome Evaluation:
+    Use feedback_schema and per_case_sequence from .agent-skills.md / stateful_test_design.
+    Failure classes: logic_defect, data_precondition, environment_runtime.
+
+  Constraints:
+    Minimal and reproducible scenarios. Stateful runs. English outputs.
+
+  Scenario Catalog:
+    Seed creation/removal. Relationship rewiring. Duplicate rows. Cross-table
+    insertions. No-op idempotency reruns.
 
 
-PROMPT 4 — Optional Consistency Review
+== PROMPT 4 — Consistency review ==
 
-Review these files for consistency and suggest minimal fixes:
-- `.agent-skills.md`
-- `.github/agents/data-engineer-analytics.agent.md`
-- `.github/agents/test_data.agent.md`
+Read these three files and verify consistency. Suggest minimal fixes only.
 
-Validation checklist:
-- No scope contradictions.
-- Language policy consistent across files.
-- Tools and capabilities aligned with described behavior.
-- Incremental mapping and stateful testing concepts are represented consistently.
-- Layer conventions and deterministic seed rule are documented where relevant.
+Files to review:
+  .agent-skills.md
+  .github/agents/data-engineer-analytics.agent.md
+  .github/agents/test_data.agent.md
+
+Checklist:
+  - No skill is defined in an agent file (definitions belong only in .agent-skills.md).
+  - Every skill referenced by name in an agent file exists in .agent-skills.md.
+  - The feedback_schema in stateful_test_design matches what agent_repair_protocol passes.
+  - Both agents have the `agent` tool (required for repair delegation).
+  - Layer taxonomy appears only in .agent-skills.md / dbt.
+  - Winner rule appears only in .agent-skills.md / incremental_mapping.
+  - Language policy is stated in both agent files.
+  - No model field with an unverified model name exists in any file.

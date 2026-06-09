@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>siebel_id_update — Complete Logic Guide</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1e293b;
+      padding: 40px 24px 80px;
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .page-title h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -.03em;
+    }
+    .page-title p {
+      margin-top: 8px;
+      font-size: 1rem;
+      color: #64748b;
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+    }
+
+    /* ── Section cards ── */
+    .section {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 40px 44px;
+      max-width: 1060px;
+      margin: 0 auto 36px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #f1f5f9;
+    }
+    .section-num {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .section-header h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .section-header p {
+      font-size: .83rem;
+      color: #64748b;
+      margin-top: 2px;
+      line-height: 1.5;
+    }
+
+    /* colour themes per section */
+    .theme-blue  .section-num { background:#dbeafe; color:#1d4ed8; }
+    .theme-green .section-num { background:#dcfce7; color:#15803d; }
+    .theme-orange .section-num { background:#ffedd5; color:#c2410c; }
+    .theme-purple .section-num { background:#ede9fe; color:#7c3aed; }
+    .theme-teal  .section-num { background:#ccfbf1; color:#0f766e; }
+    .theme-red   .section-num { background:#fee2e2; color:#b91c1c; }
+    .theme-slate .section-num { background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; }
+
+    /* ── Glossary pill ── */
+    .pill {
+      display: inline-block;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: .72rem;
+      padding: 2px 9px;
+      color: #475569;
+      margin: 2px 2px;
+      font-family: "SF Mono", "Fira Code", monospace;
+    }
+    .pill-blue { background:#eff6ff; border-color:#93c5fd; color:#1d4ed8; }
+    .pill-green { background:#f0fdf4; border-color:#86efac; color:#15803d; }
+    .pill-orange { background:#fff7ed; border-color:#fdba74; color:#c2410c; }
+
+    /* ── Two-column layout ── */
+    .two-col { display: flex; gap: 28px; align-items: flex-start; }
+    .two-col .col { flex: 1; }
+    .two-col .col-wide { flex: 1.4; }
+    .two-col .col-narrow { flex: 0.7; }
+
+    /* ── Info box ── */
+    .info-box {
+      border-radius: 12px;
+      padding: 16px 18px;
+      font-size: .8rem;
+      line-height: 1.65;
+      color: #475569;
+    }
+    .info-box b { color: #0f172a; }
+    .info-box.blue  { background:#eff6ff; border-left: 3px solid #3b82f6; }
+    .info-box.green { background:#f0fdf4; border-left: 3px solid #22c55e; }
+    .info-box.orange{ background:#fff7ed; border-left: 3px solid #f97316; }
+    .info-box.purple{ background:#faf5ff; border-left: 3px solid #a855f7; }
+    .info-box.teal  { background:#f0fdfa; border-left: 3px solid #14b8a6; }
+    .info-box.red   { background:#fef2f2; border-left: 3px solid #ef4444; }
+    .info-box.slate { background:#f8fafc; border-left: 3px solid #94a3b8; }
+
+    /* ── Step row (mini pipeline) ── */
+    .step-row {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      margin: 20px 0;
+    }
+    .step-box {
+      flex: 1;
+      border-radius: 12px;
+      padding: 16px 14px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .step-box + .step-box::before {
+      content: '▶';
+      position: absolute; left: -14px; top: 50%;
+      transform: translateY(-50%);
+      font-size: .75rem; color: #94a3b8;
+      z-index: 2;
+    }
+    .step-box .sb-icon { font-size: 1.3rem; }
+    .step-box .sb-title { font-size: .82rem; font-weight: 700; color: #0f172a; }
+    .step-box .sb-desc  { font-size: .72rem; color: #64748b; line-height: 1.5; }
+    .step-box .sb-desc b { color: #1e293b; }
+
+    /* ── Table diagram ── */
+    .table-diagram {
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      font-size: .75rem;
+      width: 100%;
+    }
+    .table-diagram .th {
+      background: #f8fafc;
+      padding: 8px 14px;
+      font-weight: 700;
+      color: #475569;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      gap: 0;
+    }
+    .table-diagram .th span, .table-diagram .tr span {
+      flex: 1;
+    }
+    .table-diagram .tr {
+      padding: 7px 14px;
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+      font-family: "SF Mono", "Fira Code", monospace;
+    }
+    .table-diagram .tr:last-child { border-bottom: none; }
+    .table-diagram .tr.highlight { background: #fef9c3; }
+    .table-diagram .tr.added    { background: #f0fdf4; }
+    .table-diagram .tr.removed  { background: #fef2f2; text-decoration: line-through; color: #94a3b8; }
+    .table-name {
+      font-size: .72rem; font-weight: 700;
+      margin-bottom: 6px;
+      color: #94a3b8;
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+
+    /* ── Graph SVG area ── */
+    .graph-area {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* ── Node styles (SVG) ── */
+
+    /* ── Big arrow ── */
+    .big-arrow {
+      text-align: center;
+      font-size: 1.4rem;
+      color: #94a3b8;
+      margin: 8px 0;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fef9c3;
+      border: 1px solid #fde047;
+      color: #713f12;
+      font-size: .72rem;
+      font-weight: 600;
+      padding: 3px 12px;
+      border-radius: 99px;
+    }
+    .badge.blue { background:#dbeafe; border-color:#93c5fd; color:#1e40af; }
+    .badge.green { background:#dcfce7; border-color:#86efac; color:#166534; }
+    .badge.red { background:#fee2e2; border-color:#fca5a5; color:#991b1b; }
+
+    /* ── Comparison table ── */
+    .cmp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .78rem;
+    }
+    .cmp-table th {
+      background: #f8fafc;
+      padding: 9px 14px;
+      text-align: left;
+      font-weight: 700;
+      color: #64748b;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .cmp-table td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+      vertical-align: top;
+    }
+    .cmp-table tr:last-child td { border-bottom: none; }
+    .cmp-table td.added  { color: #15803d; font-weight: 600; }
+    .cmp-table td.removed{ color: #b91c1c; font-weight: 600; }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: .72rem; color: #64748b;
+    }
+    .legend-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .legend-rect {
+      width: 16px; height: 10px; border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* ── Flow connector ── */
+    .flow-connector {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      margin: 4px 0;
+    }
+    .flow-connector .fc-node {
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-size: .78rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .flow-connector .fc-arrow {
+      font-size: .9rem;
+      color: #94a3b8;
+      line-height: 1.2;
+    }
+
+    /* ── Swap diagram ── */
+    .swap-steps {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .swap-box {
+      flex: 1;
+      min-width: 120px;
+      border-radius: 10px;
+      padding: 12px 14px;
+      text-align: center;
+      font-size: .74rem;
+    }
+    .swap-arrow { font-size: 1.1rem; color: #94a3b8; flex-shrink: 0; }
+
+    /* ── Audit row ── */
+    .audit-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .audit-cell {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 10px;
+      text-align: center;
+    }
+    .audit-cell .ac-val { font-size: 1.4rem; font-weight: 800; color: #0f172a; }
+    .audit-cell .ac-key { font-size: .65rem; color: #94a3b8; margin-top: 2px; text-transform: uppercase; letter-spacing: .06em; }
+
+    /* ── Summary flow ── */
+    .summary-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      align-items: flex-start;
+      margin: 16px 0;
+    }
+    .sf-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .sf-line {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 28px;
+      flex-shrink: 0;
+    }
+    .sf-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .sf-bar {
+      width: 2px;
+      background: #e2e8f0;
+      flex: 1;
+      min-height: 20px;
+    }
+    .sf-content {
+      padding: 4px 0 20px;
+      font-size: .8rem;
+      color: #475569;
+      line-height: 1.6;
+    }
+    .sf-content strong { color: #0f172a; display: block; margin-bottom: 2px; font-size: .85rem; }
+  </style>
+</head>
+<body>
+
+<!-- PAGE TITLE -->
+<div class="page-title">
+  <h1>siebel_id_update — How It Works</h1>
+  <p>A step-by-step visual guide explaining the incremental update logic: how the system detects what changed, which customers are affected, and how it updates only what it needs to.</p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 0 — Big Picture
+════════════════════════════════════════════════════ -->
+<div class="section theme-slate">
+  <div class="section-header">
+    <div class="section-num">★</div>
+    <div>
+      <h2>The Big Picture — What does this module do?</h2>
+      <p>Before diving into details, here is a high-level view of the whole process.</p>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="col">
+      <div class="info-box blue" style="margin-bottom:16px;">
+        <b>The goal:</b> For every customer (<span class="pill pill-blue">rel_id</span>), find which "master" customer (<span class="pill pill-blue">REL_ID_REGIE_KLANT</span>) they belong to — and keep that mapping up to date every time the source data changes.
+      </div>
+      <div class="info-box slate">
+        <b>Why not recompute everything every time?</b><br>
+        When data has millions of rows, rebuilding from scratch is expensive and slow. Instead, <b>siebel_id_update</b> detects only what changed and reprocesses only the affected customers — like patching a document instead of rewriting it from scratch.
+      </div>
+    </div>
+    <div class="col">
+      <!-- Mini summary flow -->
+      <div class="summary-flow">
+        <div class="sf-row">
+          <div class="sf-line">
+            <div class="sf-dot" style="background:#dbeafe;color:#1d4ed8;">1</div>
+            <div class="sf-bar"></div>
+          </div>
+          <div class="sf-content"><strong>Read fresh data from source tables</strong>Build the current list of connections and master customers.</div>
+        </div>
+        <div class="sf-row">
+          <div class="sf-line">
+            <div class="sf-dot" style="background:#dcfce7;color:#15803d;">2</div>
+            <div class="sf-bar"></div>
+          </div>
+          <div class="sf-content"><strong>Compare with the previous run's saved state</strong>Find what was added or removed since last time.</div>
+        </div>
+        <div class="sf-row">
+          <div class="sf-line">
+            <div class="sf-dot" style="background:#ffedd5;color:#c2410c;">3</div>
+            <div class="sf-bar"></div>
+          </div>
+          <div class="sf-content"><strong>Walk the graph to find all affected customers</strong>A connection change can ripple through a whole network.</div>
+        </div>
+        <div class="sf-row">
+          <div class="sf-line">
+            <div class="sf-dot" style="background:#ede9fe;color:#7c3aed;">4</div>
+            <div class="sf-bar"></div>
+          </div>
+          <div class="sf-content"><strong>Recompute only the affected area</strong>Assign the correct master customer to each affected rel_id.</div>
+        </div>
+        <div class="sf-row">
+          <div class="sf-line">
+            <div class="sf-dot" style="background:#ccfbf1;color:#0f766e;">5</div>
+            <div class="sf-bar" style="min-height:0;"></div>
+          </div>
+          <div class="sf-content"><strong>Merge and save</strong>Keep unchanged rows, replace updated ones, save a snapshot for next time.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key concepts glossary -->
+  <div style="margin-top:24px;">
+    <div class="table-name">Key concepts explained simply</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px;">
+      <div class="info-box blue">
+        <b>rel_id</b> — Customer ID<br>
+        <span style="font-size:.72rem;">A unique number that identifies one customer in the system.</span>
+      </div>
+      <div class="info-box blue">
+        <b>id_key</b> — Shared identifier<br>
+        <span style="font-size:.72rem;">A number (like a bank account or contract ID) shared by two or more customers, creating a link between them.</span>
+      </div>
+      <div class="info-box green">
+        <b>seed / REL_ID_REGIE_KLANT</b> — Master customer<br>
+        <span style="font-size:.72rem;">A special customer flagged as a "master" (drc_bnk_f = 'Y'). All connected customers get assigned this master's ID.</span>
+      </div>
+      <div class="info-box orange">
+        <b>edge</b> — Connection / link<br>
+        <span style="font-size:.72rem;">A single connection between a customer (rel_id) and a shared identifier (id_key). Like a friendship in a social network.</span>
+      </div>
+      <div class="info-box purple">
+        <b>graph expansion (BFS)</b> — Spreading through connections<br>
+        <span style="font-size:.72rem;">Starting from one customer and following all connections step by step — like spreading news through a network of friends.</span>
+      </div>
+      <div class="info-box teal">
+        <b>snapshot</b> — Saved state<br>
+        <span style="font-size:.72rem;">A copy of the data saved at the end of each run. Next time, it is used to detect what changed.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 1 — Reading & Normalising Source Data
+════════════════════════════════════════════════════ -->
+<div class="section theme-blue">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div>
+      <h2>Reading &amp; Cleaning the Source Data</h2>
+      <p>Two source tables are loaded and cleaned. Only active, valid records are kept.</p>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="col">
+      <!-- direct_bank -->
+      <div class="table-name">Source table 1 — direct_bank</div>
+      <div class="table-diagram">
+        <div class="th"><span>rel_id</span><span>np_sbl_id</span><span>drc_bnk_f</span><span>edl_valid_to_dts</span></div>
+        <div class="tr highlight"><span>1001</span><span>SBL-55</span><span>Y</span><span>9999-12-31</span></div>
+        <div class="tr"><span>1002</span><span>SBL-55</span><span>N</span><span>9999-12-31</span></div>
+        <div class="tr removed"><span>1003</span><span>SBL-77</span><span>N</span><span>2024-06-01</span></div>
+        <div class="tr"><span>1004</span><span>SBL-88</span><span>N</span><span>9999-12-31</span></div>
+      </div>
+      <div class="legend" style="margin-top:8px;">
+        <div class="legend-item"><div class="legend-rect" style="background:#fef9c3;border:1px solid #fde047;"></div>seed row (drc_bnk_f = Y)</div>
+        <div class="legend-item"><div class="legend-rect" style="background:#fef2f2;border:1px solid #fca5a5;"></div>excluded (expired date)</div>
+      </div>
+      <div class="info-box blue" style="margin-top:14px;font-size:.75rem;">
+        <b>Filters applied:</b><br>
+        ✓ Keep only rows where <b>edl_valid_to_dts = '9999-12-31'</b> (still active — no del_f column here)<br>
+        ✓ Drop rows with blank or null rel_id / np_sbl_id<br>
+        ✓ When the same (rel_id + np_sbl_id) pair appears multiple times, keep the most recent row by <b>edl_valid_from_dts</b> — ties broken by <b>drc_bnk_f = 'Y' first</b> (seed rows win)
+      </div>
+    </div>
+
+    <div class="col">
+      <!-- ggm_np -->
+      <div class="table-name">Source table 2 — ggm_np</div>
+      <div class="table-diagram">
+        <div class="th"><span>rel_id</span><span>ikb_no</span><span>del_f</span><span>edl_valid_to_dts</span></div>
+        <div class="tr"><span>1002</span><span>IKB-99</span><span>N</span><span>9999-12-31</span></div>
+        <div class="tr"><span>1004</span><span>IKB-99</span><span>N</span><span>9999-12-31</span></div>
+        <div class="tr"><span>1005</span><span>IKB-11</span><span>Y</span><span>9999-12-31</span></div>
+        <div class="tr"><span>1006</span><span>IKB-22</span><span>N</span><span>2023-01-01</span></div>
+        <div class="tr removed"><span></span><span></span><span></span><span>(null)</span></div>
+      </div>
+      <div class="legend" style="margin-top:8px;">
+        <div class="legend-item"><div class="legend-rect" style="background:#fef2f2;border:1px solid #fca5a5;"></div>only nulls/blanks are excluded</div>
+        <div class="legend-item"><div class="legend-rect" style="background:#fff;border:1px solid #e2e8f0;"></div>all other rows kept (del_f and date are ignored)</div>
+      </div>
+      <div class="info-box orange" style="margin-top:14px;font-size:.75rem;">
+        <b>⚠ Design change — historical connectivity mode:</b><br>
+        ggm_np now includes <b>all rows regardless of del_f or edl_valid_to_dts</b>. The intent is to capture every historical rel_id ↔ ikb_no relationship ever recorded, not just currently active ones.<br><br>
+        <b>Filters applied:</b><br>
+        ✓ Drop rows with blank or null rel_id / ikb_no<br>
+        ✓ Deduplicate by <b>(rel_id, ikb_no)</b> — no timestamp ordering, just unique pairs<br>
+        ✗ <s>del_f filter removed</s><br>
+        ✗ <s>edl_valid_to_dts filter removed</s>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:24px;">
+    <div class="table-name">Result: unified edge list — active (direct_bank) + historical (ggm_np)</div>
+    <div class="two-col" style="margin-top:8px;">
+      <div class="col">
+        <div class="table-diagram">
+          <div class="th"><span>source_table</span><span>rel_id</span><span>id_key</span></div>
+          <div class="tr"><span>direct_bank</span><span>1001</span><span>SBL-55</span></div>
+          <div class="tr"><span>direct_bank</span><span>1002</span><span>SBL-55</span></div>
+          <div class="tr"><span>direct_bank</span><span>1004</span><span>SBL-88</span></div>
+          <div class="tr"><span>ggm_np</span><span>1002</span><span>IKB-99</span></div>
+          <div class="tr"><span>ggm_np</span><span>1004</span><span>IKB-99</span></div>
+          <div class="tr" style="color:#c2410c;"><span>ggm_np</span><span>1005</span><span>IKB-11</span></div>
+          <div class="tr" style="color:#c2410c;"><span>ggm_np</span><span>1006</span><span>IKB-22</span></div>
+        </div>
+        <div class="legend" style="margin-top:6px;">
+          <div class="legend-item"><div class="legend-rect" style="background:#fff7ed;border:1px solid #fdba74;"></div>historical ggm_np rows (del_f='Y' or expired) now also included</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="info-box green" style="margin-bottom:10px;">
+          <b>Seeds — from direct_bank only</b><br><br>
+          Rows where <b>drc_bnk_f = 'Y'</b> and <b>edl_valid_to_dts = '9999-12-31'</b> become master customers (seeds). Seeds are <b>not</b> taken from ggm_np.<br><br>
+          <span class="pill pill-green">seed_rel_id: 1001</span><br><br>
+          Every customer reachable from <b>1001</b> through any edge (active or historical) will be assigned <b>REL_ID_REGIE_KLANT = 1001</b>.
+        </div>
+        <div class="info-box orange" style="font-size:.74rem;">
+          <b>Key asymmetry:</b> direct_bank edges are filtered to active only. ggm_np edges include the full history — past connections can still link customers together even after a record was deleted or expired.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 2 — Detecting Changes (Delta)
+════════════════════════════════════════════════════ -->
+<div class="section theme-orange">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div>
+      <h2>Detecting What Changed (Delta Detection)</h2>
+      <p>The freshly built data is compared against the saved state from the previous run. Only differences matter.</p>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="col">
+      <div class="info-box orange" style="margin-bottom:16px;">
+        Think of this as a <b>diff</b> — like comparing two versions of a document to see what lines were added or deleted.
+      </div>
+
+      <!-- Comparison diagram -->
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+        <div style="flex:1;">
+          <div class="table-name">Previous run's snapshot</div>
+          <div class="table-diagram">
+            <div class="th"><span>rel_id</span><span>id_key</span></div>
+            <div class="tr"><span>1001</span><span>SBL-55</span></div>
+            <div class="tr"><span>1002</span><span>SBL-55</span></div>
+            <div class="tr"><span>1003</span><span>SBL-77</span></div>
+          </div>
+        </div>
+        <div style="font-size:1.5rem;color:#94a3b8;flex-shrink:0;">vs</div>
+        <div style="flex:1;">
+          <div class="table-name">Current run's edges</div>
+          <div class="table-diagram">
+            <div class="th"><span>rel_id</span><span>id_key</span></div>
+            <div class="tr"><span>1001</span><span>SBL-55</span></div>
+            <div class="tr"><span>1002</span><span>SBL-55</span></div>
+            <div class="tr added"><span>1004</span><span>SBL-88</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-diagram">
+        <div class="th"><span>Change type</span><span>rel_id</span><span>id_key</span></div>
+        <div class="tr added"><span>➕ added</span><span>1004</span><span>SBL-88</span></div>
+        <div class="tr removed"><span>➖ removed</span><span>1003</span><span>SBL-77</span></div>
+      </div>
+      <div class="legend" style="margin-top:8px;">
+        <div class="legend-item"><div class="legend-rect" style="background:#f0fdf4;border:1px solid #86efac;"></div>added edge</div>
+        <div class="legend-item"><div class="legend-rect" style="background:#fef2f2;border:1px solid #fca5a5;"></div>removed edge</div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="table-name">Three types of changes detected</div>
+
+      <div class="info-box green" style="margin-bottom:10px;">
+        <b>1. Changed edges</b><br>
+        Connections between customers and shared IDs that were added or removed.<br>
+        <span style="font-size:.72rem;">→ The customers on both ends of that connection need to be re-evaluated.</span>
+      </div>
+
+      <div class="info-box orange" style="margin-bottom:10px;">
+        <b>2. Added / removed seeds (master customers)</b><br>
+        A customer was promoted to master, or a master was demoted.<br>
+        <span style="font-size:.72rem;">→ Every customer in that master's network needs a new assignment.</span>
+      </div>
+
+      <div class="info-box red">
+        <b>3. Rows linked to a removed seed</b><br>
+        Customers that were previously mapped to a master that no longer exists.<br>
+        <span style="font-size:.72rem;">→ They lose their assignment and may receive a new one, or be dropped.</span>
+      </div>
+
+      <div class="info-box slate" style="margin-top:12px;font-size:.74rem;">
+        <b>How the comparison works (anti-join / left_anti):</b><br>
+        Take all rows from the current data that do <i>not</i> appear in the previous data → these are <b>added</b>.<br>
+        Take all rows from the previous data that do <i>not</i> appear in the current data → these are <b>removed</b>.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 3 — Graph Expansion (Finding Impacted Customers)
+════════════════════════════════════════════════════ -->
+<div class="section theme-purple">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div>
+      <h2>Walking the Graph — Finding Every Affected Customer</h2>
+      <p>A change in one connection can ripple through an entire network. This step finds all customers that need to be updated.</p>
+    </div>
+  </div>
+
+  <!-- Graph diagram using SVG -->
+  <div class="two-col">
+    <div class="col-wide">
+      <div class="graph-area">
+        <svg width="480" height="300" viewBox="0 0 480 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Edges (lines) -->
+          <!-- 1001 -- SBL-55 -->
+          <line x1="100" y1="80" x2="240" y2="80" stroke="#93c5fd" stroke-width="2"/>
+          <!-- 1002 -- SBL-55 -->
+          <line x1="100" y1="160" x2="240" y2="80" stroke="#93c5fd" stroke-width="2"/>
+          <!-- 1002 -- IKB-99 -->
+          <line x1="100" y1="160" x2="240" y2="200" stroke="#93c5fd" stroke-width="2"/>
+          <!-- 1004 -- IKB-99 -->
+          <line x1="100" y1="240" x2="240" y2="200" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="6 3"/>
+          <!-- 1004 -- SBL-88 -->
+          <line x1="100" y1="240" x2="380" y2="240" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="6 3"/>
+
+          <!-- id_key nodes (diamonds shape via rect) -->
+          <!-- SBL-55 -->
+          <rect x="200" y="60" width="80" height="40" rx="8" fill="#ede9fe" stroke="#a855f7" stroke-width="1.5"/>
+          <text x="240" y="84" text-anchor="middle" font-size="11" fill="#7c3aed" font-weight="600">SBL-55</text>
+
+          <!-- IKB-99 -->
+          <rect x="200" y="180" width="80" height="40" rx="8" fill="#ede9fe" stroke="#a855f7" stroke-width="1.5"/>
+          <text x="240" y="204" text-anchor="middle" font-size="11" fill="#7c3aed" font-weight="600">IKB-99</text>
+
+          <!-- SBL-88 (new) -->
+          <rect x="340" y="220" width="80" height="40" rx="8" fill="#fef9c3" stroke="#fde047" stroke-width="1.5"/>
+          <text x="380" y="244" text-anchor="middle" font-size="11" fill="#713f12" font-weight="600">SBL-88 ✦</text>
+
+          <!-- rel_id nodes (circles) -->
+          <!-- 1001 = seed -->
+          <circle cx="100" cy="80" r="26" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+          <text x="100" y="75" text-anchor="middle" font-size="10" fill="#15803d" font-weight="700">1001</text>
+          <text x="100" y="88" text-anchor="middle" font-size="8" fill="#16a34a">SEED</text>
+
+          <!-- 1002 -->
+          <circle cx="100" cy="160" r="24" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+          <text x="100" y="164" text-anchor="middle" font-size="11" fill="#1d4ed8" font-weight="600">1002</text>
+
+          <!-- 1004 = new node (impacted) -->
+          <circle cx="100" cy="240" r="24" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+          <text x="100" y="235" text-anchor="middle" font-size="10" fill="#92400e" font-weight="700">1004</text>
+          <text x="100" y="248" text-anchor="middle" font-size="8" fill="#b45309">NEW</text>
+
+          <!-- Expansion wave indicator -->
+          <text x="240" y="280" text-anchor="middle" font-size="10" fill="#94a3b8">← BFS expands outward from changed node →</text>
+
+          <!-- Legend -->
+          <circle cx="30" cy="270" r="7" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5"/>
+          <text x="42" y="274" font-size="9" fill="#475569">seed</text>
+          <circle cx="80" cy="270" r="7" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+          <text x="92" y="274" font-size="9" fill="#475569">rel_id</text>
+          <rect x="118" y="263" width="18" height="12" rx="3" fill="#ede9fe" stroke="#a855f7" stroke-width="1"/>
+          <text x="140" y="274" font-size="9" fill="#475569">id_key</text>
+        </svg>
+      </div>
+      <div class="legend" style="margin-top:8px;justify-content:center;">
+        <div class="legend-item"><div class="legend-dot" style="background:#dcfce7;border:2px solid #22c55e;"></div>seed (master customer)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#eff6ff;border:1.5px solid #3b82f6;"></div>regular customer (rel_id)</div>
+        <div class="legend-item"><div class="legend-rect" style="background:#ede9fe;border:1px solid #a855f7;"></div>shared identifier (id_key)</div>
+        <div class="legend-item"><div class="legend-rect" style="background:#fef9c3;border:1px solid #fde047;"></div>newly added edge</div>
+      </div>
+    </div>
+
+    <div class="col-narrow">
+      <div class="info-box purple" style="margin-bottom:12px;">
+        <b>The problem:</b> A new connection (edge) was added for customer <b>1004</b>. But 1004 shares <b>IKB-99</b> with customer <b>1002</b>, who shares <b>SBL-55</b> with the seed <b>1001</b>. The whole chain is affected.
+      </div>
+
+      <div class="table-name">BFS — Breadth-First Search (wave expansion)</div>
+      <div style="display:flex;flex-direction:column;gap:0;margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px 8px 0 0;border:1px solid #e2e8f0;font-size:.75rem;">
+          <span style="background:#fef3c7;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;">0</span>
+          <span><b>Start:</b> changed rel_ids = {1004}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#faf5ff;border:1px solid #e2e8f0;border-top:none;font-size:.75rem;">
+          <span style="background:#ede9fe;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;">1</span>
+          <span>1004 → <b>IKB-99, SBL-88</b><br>IKB-99 → <b>1002</b> (new!)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#ede9fe;border:1px solid #e2e8f0;border-top:none;font-size:.75rem;">
+          <span style="background:#a855f7;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;color:#fff;">2</span>
+          <span>1002 → <b>SBL-55</b><br>SBL-55 → <b>1001</b> (new!)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:0 0 8px 8px;border:1px solid #e2e8f0;border-top:none;font-size:.75rem;">
+          <span style="background:#dcfce7;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;">✓</span>
+          <span><b>No new nodes found.</b> Stop.<br>Impacted: {1001, 1002, 1004}</span>
+        </div>
+      </div>
+
+      <div class="info-box slate" style="margin-top:12px;font-size:.73rem;">
+        <b>Max 40 iterations.</b> If the graph is huge and still expanding at step 40, the run is flagged as <b>truncated</b> and an error is raised (safety net).
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 4 — Recomputing: Seed Pair Expansion
+════════════════════════════════════════════════════ -->
+<div class="section theme-teal">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div>
+      <h2>Recomputing the Affected Area — Assigning a Master to Each Customer</h2>
+      <p>For all impacted customers, the system walks the graph again — but this time it tracks which seed (master) it started from.</p>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="col">
+      <div class="info-box teal" style="margin-bottom:16px;">
+        <b>Goal:</b> For each impacted <b>rel_id</b>, find all the seeds that can reach it through the network. Then pick one winner using a deterministic rule (same input always gives same output).
+      </div>
+
+      <div class="table-name">Seed pair expansion result — (seed, rel_id) pairs</div>
+      <div class="table-diagram" style="margin-top:6px;">
+        <div class="th"><span>seed_rel_id</span><span>rel_id</span><span>note</span></div>
+        <div class="tr"><span>1001</span><span>1001</span><span>seed reaches itself</span></div>
+        <div class="tr"><span>1001</span><span>1002</span><span>via SBL-55</span></div>
+        <div class="tr highlight"><span>1001</span><span>1004</span><span>via IKB-99 → 1002 → SBL-55</span></div>
+      </div>
+
+      <div class="big-arrow" style="margin:12px 0;">↓</div>
+
+      <div class="table-name">Winner selection — one REL_ID_REGIE_KLANT per customer</div>
+      <div class="table-diagram">
+        <div class="th"><span>REL_ID</span><span>REL_ID_REGIE_KLANT</span></div>
+        <div class="tr added"><span>1001</span><span>1001</span></div>
+        <div class="tr added"><span>1002</span><span>1001</span></div>
+        <div class="tr added"><span>1004</span><span>1001</span></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="table-name">How the winner is chosen (tie-breaker rule)</div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px;">
+        <div class="info-box green">
+          <b>Option A (default): numeric_then_lex</b><br>
+          <span style="font-size:.72rem;">
+            1. Try to convert each seed ID to a number.<br>
+            2. The <b>smallest number</b> wins.<br>
+            3. If none are numeric, the <b>alphabetically smallest</b> seed ID wins.<br><br>
+            <i>Example: seeds {1001, 999, "ABX-5"} → 999 wins (smallest number)</i>
+          </span>
+        </div>
+
+        <div class="info-box blue">
+          <b>Option B: latest_then_numeric</b><br>
+          <span style="font-size:.72rem;">
+            1. The seed with the <b>most recent activation date</b> wins.<br>
+            2. Ties broken by smallest number, then alphabetically.<br><br>
+            <i>Example: seeds {1001 (2023), 999 (2024)} → 999 wins (most recent)</i>
+          </span>
+        </div>
+
+        <div class="info-box slate">
+          <b>Why deterministic?</b><br>
+          <span style="font-size:.72rem;">Running the same data twice must always produce the same result. A deterministic rule (like "smallest number") guarantees this — there is no randomness.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 5 — Merging Output
+════════════════════════════════════════════════════ -->
+<div class="section theme-green">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div>
+      <h2>Merging the Final Output</h2>
+      <p>Unchanged rows are kept as-is. Only the affected rows are replaced with the freshly computed ones.</p>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="col">
+      <!-- Merge diagram -->
+      <div style="display:flex;flex-direction:column;gap:0;align-items:center;">
+
+        <div style="display:flex;gap:20px;width:100%;justify-content:center;">
+          <div style="flex:1;max-width:200px;">
+            <div class="table-name" style="text-align:center;">Previous output</div>
+            <div class="table-diagram">
+              <div class="th"><span>REL_ID</span><span>REL_ID_REGIE_KLANT</span></div>
+              <div class="tr" style="opacity:.5;text-decoration:line-through;color:#94a3b8;"><span>1001</span><span>OLD</span></div>
+              <div class="tr" style="opacity:.5;text-decoration:line-through;color:#94a3b8;"><span>1002</span><span>OLD</span></div>
+              <div class="tr"><span>2001</span><span>2001</span></div>
+              <div class="tr"><span>2002</span><span>2001</span></div>
+              <div class="tr" style="opacity:.5;text-decoration:line-through;color:#94a3b8;"><span>1004</span><span>OLD</span></div>
+            </div>
+          </div>
+          <div style="flex:1;max-width:200px;">
+            <div class="table-name" style="text-align:center;">Recomputed rows</div>
+            <div class="table-diagram">
+              <div class="th"><span>REL_ID</span><span>REL_ID_REGIE_KLANT</span></div>
+              <div class="tr added"><span>1001</span><span>1001</span></div>
+              <div class="tr added"><span>1002</span><span>1001</span></div>
+              <div class="tr added"><span>1004</span><span>1001</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="big-arrow">↓ merge ↓</div>
+
+        <div style="max-width:260px;width:100%;">
+          <div class="table-name" style="text-align:center;">New output (after filter)</div>
+          <div class="table-diagram">
+            <div class="th"><span>REL_ID</span><span>REL_ID_REGIE_KLANT</span></div>
+            <div class="tr"><span>2001</span><span>2001</span></div>
+            <div class="tr"><span>2002</span><span>2001</span></div>
+            <div class="tr added"><span>1001</span><span>1001</span></div>
+            <div class="tr added"><span>1002</span><span>1001</span></div>
+            <div class="tr added"><span>1004</span><span>1001</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="info-box green" style="margin-bottom:12px;">
+        <b>How the merge works:</b><br><br>
+        1. Take the <b>previous output</b> and remove all rows whose <b>REL_ID</b> is in the impacted set.<br><br>
+        2. Add the <b>recomputed rows</b> for those impacted customers.<br><br>
+        3. <b>Final filter:</b> keep only rows whose assigned master (<b>REL_ID_REGIE_KLANT</b>) is still an active seed today. Rows assigned to a master that no longer exists are dropped.
+      </div>
+
+      <div class="info-box orange">
+        <b>Why drop rows when the seed disappears?</b><br>
+        <span style="font-size:.73rem;">If a customer was assigned to master "1001" and "1001" is no longer flagged as a master customer (drc_bnk_f changed from Y to N), then the assignment is no longer valid. Those rows are removed from the output entirely.</span>
+      </div>
+
+      <div class="info-box slate" style="margin-top:12px;">
+        <b>Zero waste:</b> customers with no changes are never touched — their rows pass through unchanged.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 6 — Saving State (Staging Swap)
+════════════════════════════════════════════════════ -->
+<div class="section theme-red">
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <div>
+      <h2>Saving Results Safely — The Staging Table Swap</h2>
+      <p>Writing directly to a live table is risky. Instead, the system uses a "swap" technique to make writes atomic and safe.</p>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="col">
+      <div class="info-box red" style="margin-bottom:16px;">
+        <b>The problem with direct writes:</b> On Parquet-backed tables (like in Spark/Databricks), SQL UPDATE is not always supported. Even when it is, writing directly to a live table risks partial writes if something goes wrong mid-way.
+      </div>
+
+      <div class="table-name">How the staging swap works</div>
+      <div class="swap-steps" style="margin-top:8px;">
+        <div class="swap-box" style="background:#fff7ed;border:1px solid #fdba74;">
+          <div style="font-size:1.2rem;">📝</div>
+          <div style="font-size:.72rem;font-weight:700;margin-top:4px;">Write to staging</div>
+          <div style="font-size:.68rem;color:#64748b;margin-top:2px;">Write new data to<br><b>table__staging</b></div>
+        </div>
+        <div class="swap-arrow">→</div>
+        <div class="swap-box" style="background:#fef2f2;border:1px solid #fca5a5;">
+          <div style="font-size:1.2rem;">🗑️</div>
+          <div style="font-size:.72rem;font-weight:700;margin-top:4px;">Drop original</div>
+          <div style="font-size:.68rem;color:#64748b;margin-top:2px;">DROP TABLE<br><b>original_table</b></div>
+        </div>
+        <div class="swap-arrow">→</div>
+        <div class="swap-box" style="background:#dcfce7;border:1px solid #86efac;">
+          <div style="font-size:1.2rem;">✅</div>
+          <div style="font-size:.72rem;font-weight:700;margin-top:4px;">Rename staging</div>
+          <div style="font-size:.68rem;color:#64748b;margin-top:2px;">RENAME<br><b>__staging → table</b></div>
+        </div>
+      </div>
+      <div class="info-box green" style="margin-top:12px;font-size:.73rem;">
+        If the write to staging fails, the original table is still intact. Only after a successful write does the rename happen.
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="table-name">Four tables written at the end of each run</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+        <div class="info-box blue">
+          <b>shebang.output</b> — the main result<br>
+          <span style="font-size:.72rem;">REL_ID → REL_ID_REGIE_KLANT mapping for all active customers.</span>
+        </div>
+        <div class="info-box orange">
+          <b>state_db.edge_snapshot</b><br>
+          <span style="font-size:.72rem;">Snapshot of all edges (connections) as of this run. Used next time to detect added/removed edges.</span>
+        </div>
+        <div class="info-box orange">
+          <b>state_db.seed_snapshot</b><br>
+          <span style="font-size:.72rem;">Snapshot of all active seeds (master customers) as of this run.</span>
+        </div>
+        <div class="info-box orange">
+          <b>state_db.seed_membership</b><br>
+          <span style="font-size:.72rem;">Current mapping of rel_id → master. Used next time to find which rows are linked to a removed seed.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 7 — Safety Features
+════════════════════════════════════════════════════ -->
+<div class="section theme-slate">
+  <div class="section-header">
+    <div class="section-num">7</div>
+    <div>
+      <h2>Safety Features — Checkpoints, Truncation Guard &amp; Audit Log</h2>
+      <p>The system has several built-in safety nets to handle large data and catch problems early.</p>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+
+    <div class="info-box blue">
+      <div style="font-size:1.3rem;margin-bottom:8px;">💾</div>
+      <b>Checkpoints (memory management)</b><br><br>
+      <span style="font-size:.73rem;">
+        During graph expansion, Spark builds up long chains of operations in memory (called <i>lineage</i>). If the graph is large, this can cause memory issues.<br><br>
+        <b>Checkpoints</b> save intermediate results to disk every 2 iterations, breaking the chain. Think of it as pressing "Save" while writing a long document.
+      </span>
+    </div>
+
+    <div class="info-box red">
+      <div style="font-size:1.3rem;margin-bottom:8px;">🛑</div>
+      <b>Truncation guard (max_iter = 40)</b><br><br>
+      <span style="font-size:.73rem;">
+        Graph expansion stops after <b>40 iterations</b> maximum. If the graph is still growing at that point, it means the network is unusually large or there may be an error in the data.<br><br>
+        When this happens, the run raises an <b>error</b> (unless <b>fail_on_incomplete = False</b>), ensuring bad results never get silently written.
+      </span>
+    </div>
+
+    <div class="info-box green">
+      <div style="font-size:1.3rem;margin-bottom:8px;">📋</div>
+      <b>Run audit log</b><br><br>
+      <span style="font-size:.73rem;">
+        After every run, a summary row is appended to <b>state_db.run_audit</b>. It records what happened so the team can investigate trends or problems later.
+      </span>
+    </div>
+
+  </div>
+
+  <div style="margin-top:20px;">
+    <div class="table-name">Audit log — what gets recorded per run</div>
+    <div class="audit-grid" style="margin-top:8px;">
+      <div class="audit-cell">
+        <div class="ac-val" style="font-size:.9rem;color:#64748b;font-family:monospace;">uuid</div>
+        <div class="ac-key">run_id</div>
+      </div>
+      <div class="audit-cell">
+        <div class="ac-val" style="font-size:1rem;">±N</div>
+        <div class="ac-key">changed_edges</div>
+      </div>
+      <div class="audit-cell">
+        <div class="ac-val" style="font-size:1rem;color:#15803d;">+N</div>
+        <div class="ac-key">added_seeds</div>
+      </div>
+      <div class="audit-cell">
+        <div class="ac-val" style="font-size:1rem;color:#b91c1c;">-N</div>
+        <div class="ac-key">removed_seeds</div>
+      </div>
+      <div class="audit-cell">
+        <div class="ac-val" style="font-size:1rem;">N</div>
+        <div class="ac-key">impacted_rel_ids</div>
+      </div>
+    </div>
+    <div class="audit-grid" style="margin-top:8px;grid-template-columns:1fr 1fr 1fr;">
+      <div class="audit-cell">
+        <div class="ac-val" style="font-size:1rem;">N</div>
+        <div class="ac-key">output_rows (total)</div>
+      </div>
+      <div class="audit-cell">
+        <div class="ac-val" style="font-size:.8rem;color:#b91c1c;">true/false</div>
+        <div class="ac-key">rel_truncated</div>
+      </div>
+      <div class="audit-cell">
+        <div class="ac-val" style="font-size:.8rem;color:#b91c1c;">true/false</div>
+        <div class="ac-key">seed_truncated</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 8 — First Run vs Incremental
+════════════════════════════════════════════════════ -->
+<div class="section theme-blue">
+  <div class="section-header">
+    <div class="section-num">8</div>
+    <div>
+      <h2>First Run vs Incremental Run — Two Modes</h2>
+      <p>The system behaves differently on the very first run (when there is no saved state yet) versus all subsequent runs.</p>
+    </div>
+  </div>
+
+  <table class="cmp-table">
+    <thead>
+      <tr>
+        <th style="width:200px;">Aspect</th>
+        <th>First Run (empty snapshots)</th>
+        <th>Incremental Run (snapshots exist)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>Previous state</b></td>
+        <td>None — all snapshot tables are empty</td>
+        <td>Loaded from <b>state_db</b> snapshots</td>
+      </tr>
+      <tr>
+        <td><b>Impacted set</b></td>
+        <td class="added">ALL rel_ids in the current data</td>
+        <td>Only the rel_ids affected by changes</td>
+      </tr>
+      <tr>
+        <td><b>Work done</b></td>
+        <td>Full recompute — equivalent to siebel_id_origin</td>
+        <td>Partial recompute — only the affected area</td>
+      </tr>
+      <tr>
+        <td><b>Speed</b></td>
+        <td>Slow (processes everything)</td>
+        <td class="added">Fast (processes only what changed)</td>
+      </tr>
+      <tr>
+        <td><b>After run</b></td>
+        <td>Snapshots are written for the first time</td>
+        <td>Snapshots are updated with current state</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="info-box blue" style="margin-top:16px;">
+    <b>How the system detects "first run":</b> It checks if all three snapshot tables (<b>edge_snapshot</b>, <b>seed_snapshot</b>, <b>seed_membership</b>) are empty. If so, it treats every row as impacted.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 9 — Full Flow Summary
+════════════════════════════════════════════════════ -->
+<div class="section theme-slate">
+  <div class="section-header">
+    <div class="section-num">✓</div>
+    <div>
+      <h2>Complete Flow at a Glance</h2>
+      <p>All steps of <code>run_incremental_update()</code> in one view.</p>
+    </div>
+  </div>
+
+  <div class="step-row">
+    <div class="step-box" style="background:#eff6ff;margin-right:14px;">
+      <div class="sb-icon">📥</div>
+      <div class="sb-title">1. Load &amp; Clean</div>
+      <div class="sb-desc"><b>direct_bank</b> + <b>ggm_np</b> → edges + seeds</div>
+    </div>
+    <div class="step-box" style="background:#fff7ed;margin-right:14px;">
+      <div class="sb-icon">🔍</div>
+      <div class="sb-title">2. Detect Delta</div>
+      <div class="sb-desc">Compare current vs snapshot → added/removed edges &amp; seeds</div>
+    </div>
+    <div class="step-box" style="background:#faf5ff;margin-right:14px;">
+      <div class="sb-icon">🔁</div>
+      <div class="sb-title">3. Expand Graph</div>
+      <div class="sb-desc">BFS from changed nodes → all impacted rel_ids</div>
+    </div>
+    <div class="step-box" style="background:#f0fdfa;margin-right:14px;">
+      <div class="sb-icon">⚙️</div>
+      <div class="sb-title">4. Recompute</div>
+      <div class="sb-desc">Seed pair BFS → assign REL_ID_REGIE_KLANT</div>
+    </div>
+    <div class="step-box" style="background:#f0fdf4;">
+      <div class="sb-icon">✅</div>
+      <div class="sb-title">5. Merge &amp; Save</div>
+      <div class="sb-desc">Old unimpacted + recomputed → write output + snapshots</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;">
+    <div class="info-box green">
+      <b>Returns (run statistics):</b><br>
+      <span class="pill">changed_edges</span>
+      <span class="pill">added_seeds</span>
+      <span class="pill">removed_seeds</span>
+      <span class="pill">impacted_rel_ids</span>
+      <span class="pill">output_rows</span>
+    </div>
+    <div class="info-box slate">
+      <b>Configuration parameters:</b><br>
+      <span class="pill">max_iter</span> max graph expansion steps (default 40)<br>
+      <span class="pill">checkpoint_every</span> save to disk every N steps (default 2)<br>
+      <span class="pill">seed_tie_breaker</span> winner selection rule<br>
+      <span class="pill">fail_on_incomplete</span> error on truncation (default true)
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 10 — Test Cases
+════════════════════════════════════════════════════ -->
+<style>
+  /* ── Test case styles ── */
+  .tc-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f1f5f9;
+  }
+  .tc-num {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .8rem; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .tc-header h3 { font-size: 1rem; font-weight: 700; color: #0f172a; }
+  .tc-header p  { font-size: .78rem; color: #64748b; margin-top: 2px; }
+
+  .tc-pass { background: #dcfce7; border: 1.5px solid #86efac; }
+  .tc-fail { background: #fee2e2; border: 1.5px solid #fca5a5; }
+
+  .tc-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: .7rem; font-weight: 700; padding: 3px 10px;
+    border-radius: 99px; flex-shrink: 0; margin-left: auto;
+  }
+  .tc-badge.pass { background: #dcfce7; border: 1px solid #86efac; color: #15803d; }
+  .tc-badge.fail { background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; }
+  .tc-badge.note { background: #fff7ed; border: 1px solid #fdba74; color: #c2410c; }
+
+  .tc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .tc-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  .tc-block {
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: .76rem;
+  }
+  .tc-block .tb-label {
+    font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+    color: #94a3b8; margin-bottom: 8px;
+  }
+  .tc-block ul { padding-left: 16px; color: #475569; line-height: 1.7; }
+  .tc-block ul li b { color: #0f172a; }
+
+  .delta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 7px;
+    font-size: .73rem;
+    font-family: "SF Mono","Fira Code",monospace;
+    margin-bottom: 4px;
+  }
+  .delta-row.ins { background: #f0fdf4; color: #15803d; }
+  .delta-row.del { background: #fef2f2; color: #b91c1c; text-decoration: line-through; }
+  .delta-row.none { background: #f8fafc; color: #94a3b8; font-style: italic; font-family: inherit; }
+
+  .baseline-clusters {
+    display: flex; gap: 16px; margin-top: 10px;
+  }
+  .cluster-box {
+    flex: 1; border-radius: 10px; padding: 14px 16px; border: 1.5px solid;
+  }
+  .cluster-box .cb-seed {
+    font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    margin-bottom: 6px;
+  }
+  .cluster-box .cb-member {
+    font-size: .73rem; font-family: "SF Mono","Fira Code",monospace;
+    color: #475569; line-height: 1.8;
+  }
+
+  .case-card {
+    border-radius: 14px;
+    border: 1.5px solid #e2e8f0;
+    padding: 24px 28px;
+    margin-bottom: 18px;
+  }
+  .case-card.pass { border-color: #86efac; }
+  .case-card.fail { border-color: #fca5a5; }
+  .case-card.note-only { border-color: #fdba74; }
+
+  .change-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: .68rem; font-weight: 700; padding: 2px 8px;
+    border-radius: 4px; margin-right: 4px; vertical-align: middle;
+  }
+  .tag-insert { background: #dcfce7; color: #15803d; }
+  .tag-update { background: #dbeafe; color: #1d4ed8; }
+  .tag-run    { background: #f1f5f9; color: #475569; }
+</style>
+
+<div class="section" style="max-width:1060px;margin:0 auto 36px;">
+  <div class="section-header">
+    <div class="section-num" style="background:#f0fdf4;color:#15803d;border:1px solid #86efac;">✦</div>
+    <div>
+      <h2>Test Cases — Validating the Incremental Logic</h2>
+      <p>Each case starts from the same baseline, applies one specific change, runs the update, and verifies the output delta is exactly what was expected.</p>
+    </div>
+  </div>
+
+  <!-- Baseline -->
+  <div style="margin-bottom:28px;">
+    <div class="table-name">Baseline — the starting state before every test case</div>
+    <div class="info-box slate" style="margin-bottom:12px;font-size:.78rem;">
+      Each case calls <b>prepare_case_baseline()</b> which: resets all tables from the test CSVs, drops the state snapshots, runs the update once (first run = full compute), and records the resulting output as the baseline to compare against.
+    </div>
+    <div class="baseline-clusters">
+      <div class="cluster-box" style="background:#f0fdf4;border-color:#86efac;">
+        <div class="cb-seed" style="color:#15803d;">Seed A — 118220032</div>
+        <div class="cb-member">
+          ← 105181982<br>
+          ← 115379534<br>
+          ← 118220032 (self)
+        </div>
+      </div>
+      <div class="cluster-box" style="background:#eff6ff;border-color:#93c5fd;">
+        <div class="cb-seed" style="color:#1d4ed8;">Seed B — 118492640</div>
+        <div class="cb-member">
+          ← 11410074<br>
+          ← 117786942<br>
+          ← 118492640 (self)
+        </div>
+      </div>
+      <div class="cluster-box" style="background:#f8fafc;border-color:#e2e8f0;">
+        <div class="cb-seed" style="color:#64748b;">Total output: 6 rows</div>
+        <div class="cb-member" style="font-size:.72rem;color:#94a3b8;">
+          Sources: direct_bank + ggm_np<br>
+          Seeds come from direct_bank<br>
+          where drc_bnk_f = 'Y' and<br>
+          edl_valid_to_dts = '9999-12-31'
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-name" style="margin-bottom:12px;">Test cases (9 total)</div>
+
+  <!-- ── Case 1 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">1</div>
+      <div>
+        <h3>New direct_bank active seed</h3>
+        <p>A brand-new customer appears in direct_bank, already flagged as a master (drc_bnk_f = 'Y'), with no shared identifiers linking it to existing customers.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS</span>
+    </div>
+    <div class="tc-grid">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Change applied</div>
+        <span class="change-tag tag-insert">INSERT</span> into <b>direct_bank</b><br><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
+          rel_id = 130000001<br>
+          np_sbl_id = '1-Z-NEW1'<br>
+          drc_bnk_f = 'Y'<br>
+          edl_valid_to_dts = '9999-12-31'
+        </div>
+      </div>
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Why this happens</div>
+        <ul>
+          <li>New row creates a new edge: <b>130000001 ↔ 1-Z-NEW1</b></li>
+          <li>No other customer shares <b>1-Z-NEW1</b></li>
+          <li>drc_bnk_f='Y' → 130000001 becomes a new seed</li>
+          <li>Isolated seed maps only to itself</li>
+        </ul>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row ins">➕ (130000001 → 130000001)</div>
+        <div class="delta-row none">no removals</div>
+        <div style="margin-top:8px;font-size:.72rem;color:#64748b;">Output grows from 6 to <b>7 rows</b>.<br>All previous rows unchanged.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Case 2 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">2</div>
+      <div>
+        <h3>Flip seed off — drc_bnk_f Y → N for seed 118492640</h3>
+        <p>The master flag is removed from an active seed. All customers assigned to that master lose their assignment.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS</span>
+    </div>
+
+    <div class="tc-grid">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Change applied</div>
+        <span class="change-tag tag-update">UPDATE</span> <b>direct_bank</b><br><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
+          WHERE rel_id = 118492640<br>
+          AND np_sbl_id = '1-1TWAZ5GR'<br>
+          AND drc_bnk_f = 'Y'<br>
+          AND edl_valid_to_dts = '9999-12-31'<br>
+          SET drc_bnk_f = 'N'
+        </div>
+        <div style="font-size:.7rem;color:#94a3b8;margin-top:6px;">Note: uses staging-swap fallback since SQL UPDATE may be unsupported on Parquet.</div>
+      </div>
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Why this happens</div>
+        <ul>
+          <li>118492640 is removed from the seed list</li>
+          <li>The system finds all rows in <b>seed_membership</b> where rel_id_regie_klant = 118492640 → that's 11410074, 117786942, 118492640</li>
+          <li>All 3 are added to the impacted set and recomputed</li>
+          <li>No active seed can reach them → all 3 are <b>dropped</b> from output</li>
+        </ul>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row del">➖ (11410074 → 118492640)</div>
+        <div class="delta-row del">➖ (117786942 → 118492640)</div>
+        <div class="delta-row del">➖ (118492640 → 118492640)</div>
+        <div style="margin-top:8px;font-size:.72rem;color:#64748b;">Output shrinks from 6 to <b>3 rows</b>. Only Cluster A survives.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Case 3 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">3</div>
+      <div>
+        <h3>ggm_np rel_id reassignment via fallback</h3>
+        <p>A customer's ID in ggm_np is changed (old customer removed, new customer takes its place with the same shared key).</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS</span>
+    </div>
+
+    <div class="info-box blue" style="margin-bottom:14px;font-size:.78rem;">
+      This is a <b>two-step scenario</b>: first, add 130000002 linked to an existing seed's identifier. Run once to absorb it. Then reassign that row's rel_id from 130000002 to 130000003 and run again.
+    </div>
+
+    <div class="tc-grid">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Setup (run 1)</div>
+        <span class="change-tag tag-insert">INSERT</span> <b>ggm_np</b><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
+          rel_id = 130000002<br>
+          ikb_no = '1-1N09820A'<br>
+          del_f = 'N'<br>
+          edl_valid_to_dts = '9999-12-31'
+        </div>
+        <div style="font-size:.7rem;color:#64748b;margin-top:6px;">Run once → (130000002 → 118220032) enters output. This becomes the new baseline for the delta check.</div>
+      </div>
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Change applied (run 2)</div>
+        <span class="change-tag tag-update">UPDATE</span> <b>ggm_np</b><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
+          WHERE rel_id = 130000002<br>
+          AND ikb_no = '1-1N09820A'<br>
+          SET rel_id = 130000003
+        </div>
+        <div style="font-size:.7rem;color:#64748b;margin-top:6px;">Edge 130000002↔1-1N09820A disappears; edge 130000003↔1-1N09820A appears.</div>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row ins">➕ (130000003 → 118220032)</div>
+        <div class="delta-row del">➖ (130000002 → 118220032)</div>
+        <div style="margin-top:8px;font-size:.72rem;color:#64748b;">Row count unchanged — one swap. Cluster A membership stays at the same size.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Case 4 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">4</div>
+      <div>
+        <h3>Idempotent no-change run</h3>
+        <p>The update is executed a second time without any source mutations. The output must be identical.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS</span>
+    </div>
+    <div class="tc-grid-2">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Change applied</div>
+        <span class="change-tag tag-run">RUN ONLY</span> No mutations to any source table.<br><br>
+        <ul style="margin-top:8px;">
+          <li>Edges compared against snapshot → <b>no diff</b></li>
+          <li>Seeds compared against snapshot → <b>no diff</b></li>
+          <li>Impact start set is empty → <b>no recompute</b></li>
+          <li>Previous output is returned unchanged</li>
+        </ul>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row none">no insertions</div>
+        <div class="delta-row none">no removals</div>
+        <div style="margin-top:8px;font-size:.72rem;color:#64748b;">
+          Output stays at exactly <b>6 rows</b>. This verifies the system does not drift when run repeatedly with unchanged data (idempotency guarantee).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Case 5 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">5</div>
+      <div>
+        <h3>New ikb_no for an existing rel_id (no new reachability)</h3>
+        <p>A customer already in the output gets a new identifier in ggm_np. Because no other customer shares that new identifier, no new connections form.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS</span>
+    </div>
+    <div class="tc-grid">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Change applied</div>
+        <span class="change-tag tag-insert">INSERT</span> <b>ggm_np</b><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
+          rel_id = 118220032<br>
+          ikb_no = '1-ALT-IKB-118220032'<br>
+          del_f = 'N'<br>
+          edl_valid_to_dts = '9999-12-31'
+        </div>
+      </div>
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Why no change</div>
+        <ul>
+          <li>New edge: <b>118220032 ↔ 1-ALT-IKB-118220032</b></li>
+          <li>118220032 is impacted (edge changed)</li>
+          <li>Graph expansion: no other rel_id shares <b>1-ALT-IKB-118220032</b></li>
+          <li>118220032 is already assigned to itself (its own seed) → same result</li>
+        </ul>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row none">no insertions</div>
+        <div class="delta-row none">no removals</div>
+        <div style="margin-top:8px;font-size:.72rem;color:#64748b;">Output stays at <b>6 rows</b>. Adding isolated edges to existing nodes does not change assignments.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Case 6 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">6</div>
+      <div>
+        <h3>Duplicate source row does not duplicate output</h3>
+        <p>An identical copy of an existing active ggm_np row is inserted. The deduplication logic must absorb it silently.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS</span>
+    </div>
+    <div class="tc-grid-2">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Change applied</div>
+        <span class="change-tag tag-insert">INSERT</span> <b>ggm_np</b> — copy of existing row<br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
+          rel_id = 118220032<br>
+          ikb_no = '1-1N09820A'<br>
+          del_f = 'N'<br>
+          edl_valid_to_dts = '9999-12-31'<br>
+          (exact copy of existing row)
+        </div>
+        <div style="font-size:.7rem;color:#64748b;margin-top:6px;">After dedup, this is a no-op: <b>dropDuplicates(['source_table', 'rel_id', 'id_key'])</b> collapses it back to one edge.</div>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row none">no insertions</div>
+        <div class="delta-row none">no removals</div>
+        <div style="margin-top:8px;font-size:.72rem;color:#64748b;">Output stays at <b>6 rows</b> with no duplicates. The deduplication step in <b>normalize_active_ggm_np</b> (and the final edge <b>dropDuplicates</b>) absorb redundant source rows before any delta is computed.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Case 7 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">7</div>
+      <div>
+        <h3>New rel_id joins an existing network via shared ikb_no</h3>
+        <p>A brand-new customer appears in ggm_np using an identifier already in use by an existing network. It inherits that network's master.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS</span>
+    </div>
+    <div class="tc-grid">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Change applied</div>
+        <span class="change-tag tag-insert">INSERT</span> <b>ggm_np</b><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
+          rel_id = 130000004<br>
+          ikb_no = '1-1N09820A'<br>
+          del_f = 'N'<br>
+          edl_valid_to_dts = '9999-12-31'
+        </div>
+      </div>
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Why this happens</div>
+        <ul>
+          <li>New edge: <b>130000004 ↔ 1-1N09820A</b></li>
+          <li><b>1-1N09820A</b> already connects to rel_id 118220032 (the seed)</li>
+          <li>Graph expansion: 130000004 → 1-1N09820A → 118220032 (seed found)</li>
+          <li>130000004 inherits master <b>118220032</b></li>
+        </ul>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row ins">➕ (130000004 → 118220032)</div>
+        <div class="delta-row none">no removals</div>
+        <div style="margin-top:8px;font-size:.72rem;color:#64748b;">Output grows from 6 to <b>7 rows</b>. Cluster A gains one new member.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Case 8 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">8</div>
+      <div>
+        <h3>Simultaneous new seed + new ggm_np sharing a new identifier</h3>
+        <p>A new master customer and a new regular customer are inserted in the same run. They share a brand-new identifier, so the regular customer immediately joins the new master's network.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS</span>
+    </div>
+    <div class="tc-grid">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Changes applied (both in same run)</div>
+        <span class="change-tag tag-insert">INSERT</span> <b>direct_bank</b><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin:6px 0 8px;line-height:1.7;">
+          rel_id = 130000010<br>
+          np_sbl_id = '1-CROSS-LINK-01'<br>
+          drc_bnk_f = 'Y' ← new seed<br>
+          edl_valid_to_dts = '9999-12-31'
+        </div>
+        <span class="change-tag tag-insert">INSERT</span> <b>ggm_np</b><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
+          rel_id = 130000011<br>
+          ikb_no = '1-CROSS-LINK-01'<br>
+          del_f = 'N'<br>
+          edl_valid_to_dts = '9999-12-31'
+        </div>
+      </div>
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Graph connections</div>
+        <div style="font-size:.76rem;line-height:1.8;color:#475569;">
+          New edges built:<br>
+          <b>130000010</b> ↔ 1-CROSS-LINK-01 (direct_bank)<br>
+          <b>130000011</b> ↔ 1-CROSS-LINK-01 (ggm_np)<br><br>
+          Both share <b>1-CROSS-LINK-01</b> → they are in the same connected component.<br><br>
+          New seed detected: <b>130000010</b><br>
+          Seed pair expansion: 130000010 reaches 130000010 (self) and 130000011 (via 1-CROSS-LINK-01).<br><br>
+          Winner for 130000011: only reachable seed is 130000010.
+        </div>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row ins">➕ (130000010 → 130000010)</div>
+        <div class="delta-row ins">➕ (130000011 → 130000010)</div>
+        <div class="delta-row none">no removals</div>
+        <div style="margin-top:8px;font-size:.72rem;color:#64748b;">Output grows from 6 to <b>8 rows</b>. A new isolated cluster (C) forms with seed 130000010.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Case 9 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">9</div>
+      <div>
+        <h3>Two new rel_ids from both tables join an existing seed's network</h3>
+        <p>A new customer appears in direct_bank (not a seed) and another in ggm_np, both referencing an existing shared identifier already tied to an active seed. Both immediately inherit that master. Idempotency is also verified.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS + idempotency PASS</span>
+    </div>
+    <div class="tc-grid">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Changes applied (same run)</div>
+        <span class="change-tag tag-insert">INSERT</span> <b>direct_bank</b><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin:6px 0 8px;line-height:1.7;">
+          rel_id = 130000012<br>
+          np_sbl_id = '1-1N09820A'<br>
+          drc_bnk_f = 'N' ← NOT a seed<br>
+          edl_valid_to_dts = '9999-12-31'
+        </div>
+        <span class="change-tag tag-insert">INSERT</span> <b>ggm_np</b><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
+          rel_id = 130000013<br>
+          ikb_no = '1-1N09820A'<br>
+          del_f = 'N'<br>
+          edl_valid_to_dts = '9999-12-31'
+        </div>
+      </div>
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Graph connections</div>
+        <div style="font-size:.76rem;line-height:1.8;color:#475569;">
+          <b>1-1N09820A</b> already connects 118220032 (the seed) to the existing cluster.<br><br>
+          New edges:<br>
+          130000012 ↔ 1-1N09820A (direct_bank, drc_bnk_f='N')<br>
+          130000013 ↔ 1-1N09820A (ggm_np)<br><br>
+          Both new rel_ids reach seed <b>118220032</b> via 1-1N09820A in one BFS hop.<br><br>
+          Second run (idempotency): no edge diff → impact set empty → output unchanged.
+        </div>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row ins">➕ (130000012 → 118220032)</div>
+        <div class="delta-row ins">➕ (130000013 → 118220032)</div>
+        <div class="delta-row none">no removals</div>
+        <div style="margin-top:8px;font-size:.72rem;color:#64748b;">Output grows from 6 to <b>8 rows</b>. Cluster A gains two new members. Second run: <b>0 changes</b> (idempotency confirmed).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary table -->
+  <div style="margin-top:10px;">
+    <div class="table-name">Summary — all 9 cases at a glance</div>
+    <table class="cmp-table" style="margin-top:8px;">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Scenario</th>
+          <th>Table changed</th>
+          <th>Inserted</th>
+          <th>Removed</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td><td>New active seed (isolated)</td><td>direct_bank</td>
+          <td class="added">1 row</td><td>—</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>2</td><td>Flip seed off (Y → N)</td><td>direct_bank</td>
+          <td>—</td><td class="removed">3 rows</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>3</td><td>ggm_np rel_id reassignment</td><td>ggm_np</td>
+          <td class="added">1 row</td><td class="removed">1 row</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>4</td><td>Idempotent no-change run</td><td>—</td>
+          <td>—</td><td>—</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>5</td><td>New ikb_no for existing rel_id (no new link)</td><td>ggm_np</td>
+          <td>—</td><td>—</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>6</td><td>Duplicate source row absorbed by dedup</td><td>ggm_np</td>
+          <td>—</td><td>—</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>7</td><td>New rel_id joins via existing ikb_no</td><td>ggm_np</td>
+          <td class="added">1 row</td><td>—</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>8</td><td>New seed + linked ggm_np in same run</td><td>direct_bank + ggm_np</td>
+          <td class="added">2 rows</td><td>—</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>9</td><td>Cross-table new rel_ids → existing seed</td><td>direct_bank + ggm_np</td>
+          <td class="added">2 rows</td><td>—</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS + idempotency</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+</body>
+</html>
