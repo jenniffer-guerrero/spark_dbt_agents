@@ -60,6 +60,13 @@ pipenv --python 3.10
 pipenv sync
 ```
 
+Or use the repository bootstrap script (works without Pipenv):
+
+```bash
+cd /Users/jguerrrero/code/jguerrero_personal
+bash scripts/setup_venv.sh
+```
+
 ### If dependencies change
 
 ```bash
