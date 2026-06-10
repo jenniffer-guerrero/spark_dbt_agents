@@ -2,6 +2,17 @@
 
 This workspace is configured so PySpark code and dbt models point to the same local Spark SQL warehouse and Hive metastore.
 
+## One-command local shell setup
+
+Use this when you open a new terminal in any laptop:
+
+```bash
+cd /Users/jguerrrero/code/jguerrero_personal
+source scripts/setup_env.sh
+```
+
+This sets Java + Spark env vars and activates `.venv` in the current shell.
+
 ## Shared paths
 
 - Warehouse: `/Users/jguerrrero/code/jguerrero_personal/.local/spark/warehouse`
