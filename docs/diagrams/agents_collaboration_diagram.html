@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Collaboration Architecture - siebel_id Project</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #0f172a;
+      padding: 28px;
+      line-height: 1.45;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 10px 36px rgba(15, 23, 42, 0.16);
+      overflow: hidden;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #0f766e 0%, #1d4ed8 100%);
+      color: #f8fafc;
+      padding: 34px 38px 28px;
+    }
+
+    .hero h1 {
+      font-size: 1.75rem;
+      font-weight: 760;
+      letter-spacing: -0.02em;
+    }
+
+    .hero p {
+      margin-top: 8px;
+      max-width: 900px;
+      font-size: 0.95rem;
+      opacity: 0.95;
+    }
+
+    .hero-badges {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 650;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(248, 250, 252, 0.35);
+      background: rgba(248, 250, 252, 0.13);
+    }
+
+    .content {
+      padding: 28px 34px 36px;
+      display: grid;
+      gap: 22px;
+    }
+
+    .section {
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 18px 18px 16px;
+      background: #f8fafc;
+    }
+
+    .section h2 {
+      font-size: 1.06rem;
+      font-weight: 740;
+      letter-spacing: -0.01em;
+      color: #0f172a;
+      margin-bottom: 10px;
+    }
+
+    .section p {
+      font-size: 0.86rem;
+      color: #334155;
+    }
+
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .agent-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      background: #ffffff;
+      padding: 14px;
+      min-height: 190px;
+    }
+
+    .agent-card h3 {
+      font-size: 0.92rem;
+      font-weight: 730;
+      margin-bottom: 6px;
+      color: #0f172a;
+    }
+
+    .agent-card .role {
+      font-size: 0.74rem;
+      color: #334155;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 5px 7px;
+      margin-bottom: 8px;
+    }
+
+    .agent-card ul {
+      padding-left: 16px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .agent-card li {
+      font-size: 0.79rem;
+      color: #334155;
+    }
+
+    .flow {
+      margin-top: 4px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .flow-step {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 10px;
+      position: relative;
+    }
+
+    .flow-step:not(:last-child)::after {
+      content: ">";
+      position: absolute;
+      right: -7px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #f8fafc;
+      color: #64748b;
+      font-weight: 700;
+      padding: 0 2px;
+    }
+
+    .flow-step .num {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #0f766e;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .flow-step h4 {
+      margin-top: 4px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .flow-step p {
+      margin-top: 4px;
+      font-size: 0.74rem;
+      color: #475569;
+    }
+
+    .matrix {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      margin-top: 8px;
+      background: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .matrix th,
+    .matrix td {
+      border: 1px solid #dbe3ed;
+      padding: 8px 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .matrix th {
+      background: #e2e8f0;
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #334155;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .panel {
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 12px;
+      background: #ffffff;
+    }
+
+    .panel h3 {
+      font-size: 0.86rem;
+      margin-bottom: 7px;
+      color: #0f172a;
+    }
+
+    .panel ul {
+      padding-left: 16px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .panel li {
+      font-size: 0.78rem;
+      color: #334155;
+    }
+
+    .footer-note {
+      font-size: 0.73rem;
+      color: #64748b;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 1080px) {
+      .agents-grid { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr 1fr; }
+      .flow-step:not(:last-child)::after { content: none; }
+      .split { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 12px; }
+      .hero { padding: 24px 18px 20px; }
+      .content { padding: 16px; }
+      .flow { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <h1>Agents Collaboration Architecture</h1>
+      <p>
+        How specialized agents cooperate in this Spark incremental mapping project to implement logic,
+        design and validate test cases, run repairs, and keep notebooks and documentation synchronized.
+      </p>
+      <div class="hero-badges">
+        <span class="badge">Data Engineer and Analytics Agent</span>
+        <span class="badge">test_data Agent</span>
+        <span class="badge">Explore Agent</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="section">
+        <h2>Project Context</h2>
+        <p>
+          The project maintains an incremental mapping from REL_ID to REL_ID_REGIE_KLANT over a historical graph built from direct_bank and ggm_np.
+          The delivery model requires strict consistency across Python transformation logic, update notebooks, origin notebook semantics,
+          unit tests, notebook test cases, and user-facing documentation.
+        </p>
+      </div>
+
+      <div class="section">
+        <h2>Agent Roles and Functional Scope</h2>
+        <div class="agents-grid">
+          <div class="agent-card">
+            <h3>Data Engineer and Analytics Agent</h3>
+            <div class="role">Primary implementation and orchestration agent</div>
+            <ul>
+              <li>Implements and refactors Spark transformation logic.</li>
+              <li>Performs lineage and impact analysis for model changes.</li>
+              <li>Synchronizes logic with update and origin notebooks.</li>
+              <li>Coordinates validation workflow and final consistency checks.</li>
+              <li>Ensures documentation updates match final behavior.</li>
+            </ul>
+          </div>
+
+          <div class="agent-card">
+            <h3>test_data Agent</h3>
+            <div class="role">Stateful testing and delta-verification specialist</div>
+            <ul>
+              <li>Designs high-value stateful mutation scenarios.</li>
+              <li>Defines expected inserted and removed output deltas.</li>
+              <li>Validates idempotency and duplicate-safety behavior.</li>
+              <li>Detects mismatches between logic, unit tests, notebook tests, and docs.</li>
+              <li>Proposes concrete file-level corrections when failures appear.</li>
+            </ul>
+          </div>
+
+          <div class="agent-card">
+            <h3>Explore Agent</h3>
+            <div class="role">Fast read-only discovery and context accelerator</div>
+            <ul>
+              <li>Finds relevant symbols, files, and references quickly.</li>
+              <li>Supports impact scoping before edits.</li>
+              <li>Reduces navigation overhead in large changes.</li>
+              <li>Helps verify coverage of cross-file updates.</li>
+              <li>Improves throughput without modifying source artifacts.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>How Agents Interact in the Change Lifecycle</h2>
+        <div class="flow">
+          <div class="flow-step">
+            <div class="num">Step 1</div>
+            <h4>Scope</h4>
+            <p>Data Engineer analyzes requested business-rule or graph-semantic change and impacted artifacts.</p>
+          </div>
+          <div class="flow-step">
+            <div class="num">Step 2</div>
+            <h4>Implement</h4>
+            <p>Update Python logic and synchronize notebook logic for update and, when needed, origin flow.</p>
+          </div>
+          <div class="flow-step">
+            <div class="num">Step 3</div>
+            <h4>Design Tests</h4>
+            <p>Invoke test_data to validate scenario deltas and detect missing or incorrect test coverage.</p>
+          </div>
+          <div class="flow-step">
+            <div class="num">Step 4</div>
+            <h4>Repair and Align</h4>
+            <p>Fix unit tests and notebook tests until behavior and expectations are consistent.</p>
+          </div>
+          <div class="flow-step">
+            <div class="num">Step 5</div>
+            <h4>Validate</h4>
+            <p>Run pytest and replay impacted notebook cases, including edge and seed eligibility checks.</p>
+          </div>
+          <div class="flow-step">
+            <div class="num">Step 6</div>
+            <h4>Document</h4>
+            <p>Update diagrams and user notes so documented behavior matches the shipped implementation.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Artifacts and Ownership Matrix</h2>
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th>Artifact Group</th>
+              <th>Primary Agent</th>
+              <th>Validation Agent</th>
+              <th>Purpose in Workflow</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>etl_siebel incremental logic</td>
+              <td>Data Engineer and Analytics Agent</td>
+              <td>test_data Agent</td>
+              <td>Core transformation behavior and incremental recomputation semantics.</td>
+            </tr>
+            <tr>
+              <td>notebooks/siebel_id_update and notebooks/siebel_id_origin</td>
+              <td>Data Engineer and Analytics Agent</td>
+              <td>test_data Agent</td>
+              <td>Executable notebook parity with production logic and graph rules.</td>
+            </tr>
+            <tr>
+              <td>tests/test_siebel_incremental and notebooks/siebel_id_test</td>
+              <td>test_data Agent</td>
+              <td>Data Engineer and Analytics Agent</td>
+              <td>Scenario-based correctness checks, expected deltas, and idempotency verification.</td>
+            </tr>
+            <tr>
+              <td>docs/diagrams and user-facing docs</td>
+              <td>Data Engineer and Analytics Agent</td>
+              <td>test_data Agent</td>
+              <td>Keep operational and conceptual documentation aligned with final behavior.</td>
+            </tr>
+            <tr>
+              <td>Search and dependency mapping</td>
+              <td>Explore Agent</td>
+              <td>Data Engineer and Analytics Agent</td>
+              <td>Fast read-only context extraction for change impact and completeness checks.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>Functional Benefits of Agent-Based Development</h2>
+        <div class="split">
+          <div class="panel">
+            <h3>Advantages</h3>
+            <ul>
+              <li>Clear specialization reduces context switching and improves quality.</li>
+              <li>Stateful testing discipline catches regressions in incremental behavior.</li>
+              <li>Mandatory synchronization lowers drift between code, notebooks, tests, and docs.</li>
+              <li>Faster triage and repair loops with explicit failure classification.</li>
+              <li>Better auditability of why a change was made and how it was validated.</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h3>Trade-offs and Considerations</h3>
+            <ul>
+              <li>More process overhead for small one-line changes.</li>
+              <li>Requires discipline to keep prompts and agent definitions up to date.</li>
+              <li>Notebook and unit-test parity can drift if synchronization is skipped.</li>
+              <li>Long validation cycles may increase turnaround for complex scenarios.</li>
+              <li>Environment instability can mask logic defects unless runtime issues are isolated first.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-note">
+          Recommended practice: treat every logic update as a full lifecycle change (implementation, test design, validation, and documentation) rather than as an isolated code patch.
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

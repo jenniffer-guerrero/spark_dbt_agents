@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 METASTORE_DIR="${METASTORE_DIR:-$ROOT_DIR/.local/spark/metastore_db}"
 LOCK_FILES=("$METASTORE_DIR/db.lck" "$METASTORE_DIR/dbex.lck")
 APPLY=0
@@ -9,8 +9,8 @@ APPLY=0
 usage() {
   cat <<'EOF'
 Usage:
-  bash ./stop_spark_holders.sh           # dry-run: show lock holder processes
-  bash ./stop_spark_holders.sh --apply   # stop lock holder processes
+  bash ./scripts/stop_spark_holders.sh           # dry-run: show lock holder processes
+  bash ./scripts/stop_spark_holders.sh --apply   # stop lock holder processes
 
 Options:
   --apply  Terminate detected holder processes (TERM, then KILL if needed).
@@ -97,4 +97,4 @@ if [[ ${#REMAINING[@]} -gt 0 ]]; then
   kill -KILL "${REMAINING[@]}" 2>/dev/null || true
 fi
 
-echo "Done. You can retry: bash ./open_spark_sql.sh"
+echo "Done. You can retry: bash ./scripts/open_spark_sql.sh"

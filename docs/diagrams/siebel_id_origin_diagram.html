@@ -115,9 +115,11 @@
       <div class="stage-body">
         Load CSV fixtures into Spark tables:<br><br>
         <b>direct_bank</b><br>
-        rel_id · np_sbl_id · drc_bnk_f · valid dates<br><br>
+        rel_id · np_sbl_id · drc_bnk_f · valid dates<br>
+        e.g. <b>118220032 · 1-1N09820A · Y · 9999-12-31</b><br><br>
         <b>ggm_np</b><br>
-        rel_id · ikb_no · del_f · valid dates
+        rel_id · ikb_no · del_f · valid dates<br>
+        e.g. <b>11410074 · 1-7JI-23579 · N · 2016-01-25...</b>
       </div>
     </div>
 
@@ -144,6 +146,8 @@
         rel_id ↔ np_sbl_id<br><br>
         <b>ggm_np</b><br>
         rel_id ↔ ikb_no<br><br>
+        Historical edges are kept for connectivity<br>
+        (not only open-ended rows).<br><br>
         Nulls and blank keys are dropped.
       </div>
     </div>
@@ -163,9 +167,10 @@
     <div class="stage s5">
       <div class="stage-icon">🏆</div>
       <div class="stage-step">Step 5</div>
-      <div class="stage-title">Assign Winner</div>
+      <div class="stage-title">Validate N->1 Assignment</div>
       <div class="stage-body">
-        When one rel_id is reachable from <b>multiple seeds</b>:<br><br>
+        Expected contract: each REL_ID has one active seed candidate.<br><br>
+        Defensive fallback if violated:<br>
         → <b>min numeric seed</b> wins<br>
         → min lexical seed as fallback<br><br>
         One deterministic<br><b>REL_ID_REGIE_KLANT</b><br>per REL_ID.
@@ -196,7 +201,11 @@
       After writing, the notebook validates the result against<br>
       <b>use_cases/siebel_id/input/output.csv</b>:<br>
       checks row counts, samples output, and confirms<br>
-      <b>no duplicate REL_ID</b> values exist in the final table.
+      <b>no duplicate REL_ID</b> values exist in the final table.<br><br>
+      Real output sample rows:<br>
+      <b>105181982 → 118220032</b><br>
+      <b>11410074 → 118492640</b><br>
+      <b>117786942 → 118492640</b>
     </div>
   </div>
 

@@ -1,0 +1,21 @@
+{
+  "source_db": "shebang",
+  "target_db": "shebang",
+  "state_db": "shebang_state",
+  "tables": {
+    "direct_bank": "direct_bank",
+    "ggm_np": "ggm_np",
+    "output": "output",
+    "edge_snapshot": "edge_snapshot",
+    "seed_snapshot": "seed_snapshot",
+    "seed_membership": "seed_membership",
+    "run_audit": "run_audit"
+  },
+  "options": {
+    "max_iter": 40,
+    "checkpoint_every": 2,
+    "open_ended_ts": "9999-12-31 00:00:00",
+    "fail_on_incomplete": true,
+    "seed_tie_breaker": "latest_then_numeric"
+  }
+}

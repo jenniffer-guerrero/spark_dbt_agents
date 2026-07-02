@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BFS-Style Graph Expansion (REL_ID <-> ID_KEY)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #e2e8f0;
+      color: #0f172a;
+      padding: 24px;
+      line-height: 1.45;
+    }
+
+    .page {
+      max-width: 1160px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 10px 34px rgba(15, 23, 42, 0.14);
+      overflow: hidden;
+    }
+
+    .hero {
+      padding: 26px 28px 20px;
+      background: linear-gradient(135deg, #0f766e, #1d4ed8);
+      color: #f8fafc;
+    }
+
+    .hero h1 {
+      font-size: 1.58rem;
+      letter-spacing: -0.02em;
+      font-weight: 760;
+    }
+
+    .hero p {
+      margin-top: 7px;
+      font-size: 0.93rem;
+      opacity: 0.95;
+      max-width: 930px;
+    }
+
+    .content {
+      padding: 18px 20px 24px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .box {
+      border: 1px solid #dbe3ed;
+      border-radius: 12px;
+      background: #f8fafc;
+      padding: 12px;
+    }
+
+    .box h2 {
+      font-size: 0.95rem;
+      font-weight: 740;
+      margin-bottom: 7px;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+    }
+
+    .box p, .box li {
+      font-size: 0.83rem;
+      color: #334155;
+    }
+
+    .box ul {
+      padding-left: 16px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border: 1px solid;
+    }
+
+    .rel { background: #ecfeff; color: #0f766e; border-color: #5eead4; }
+    .key { background: #eff6ff; color: #1d4ed8; border-color: #93c5fd; }
+    .new { background: #f0fdf4; color: #15803d; border-color: #86efac; }
+
+    .graph {
+      border: 1px solid #dbe3ed;
+      border-radius: 12px;
+      background: #ffffff;
+      padding: 12px;
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #ffffff;
+    }
+
+    .iter-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .iter {
+      border: 1px solid #dbe3ed;
+      border-radius: 10px;
+      background: #ffffff;
+      padding: 9px;
+    }
+
+    .iter h3 {
+      font-size: 0.8rem;
+      margin-bottom: 5px;
+      color: #0f172a;
+    }
+
+    .callout-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .mini-title {
+      font-size: 0.84rem;
+      font-weight: 740;
+      color: #0f172a;
+      margin-bottom: 7px;
+    }
+
+    .legend-line {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      font-size: 0.73rem;
+      color: #334155;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.74rem;
+      color: #0f172a;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 980px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .iter-grid { grid-template-columns: 1fr; }
+      .callout-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <h1>BFS-Style Expansion in This Project</h1>
+      <p>
+        The graph is bipartite: REL_ID nodes connect only to ID_KEY nodes.
+        Expansion alternates REL_ID -> ID_KEY -> REL_ID until no new REL_ID appears.
+      </p>
+    </div>
+
+    <div class="content">
+      <div class="grid-2">
+        <div class="box">
+          <h2>What "BFS-style" means here</h2>
+          <ul>
+            <li>Start from an initial set called <b>frontier</b>.</li>
+            <li>Expand one hop level at a time (layer by layer).</li>
+            <li>Track all discovered nodes in <b>visited</b>.</li>
+            <li>At each iteration, only keep truly new nodes.</li>
+            <li>Stop when no new nodes are discovered.</li>
+          </ul>
+        </div>
+
+        <div class="box">
+          <h2>How it maps to project code</h2>
+          <p>
+            In <b>expand_rel_component</b>:
+          </p>
+          <div class="mono">via_id = frontier JOIN edges ON rel_id
+next_rel = via_id JOIN edges ON id_key
+new_rel = next_rel ANTI JOIN visited
+visited = visited UNION new_rel
+frontier = new_rel</div>
+        </div>
+      </div>
+
+      <div class="graph">
+        <h2 style="margin-bottom:8px;">Example Graph (Bipartite)</h2>
+        <svg viewBox="0 0 980 300" aria-label="Bipartite graph example">
+          <!-- labels -->
+          <text x="130" y="24" font-size="14" fill="#0f766e" font-weight="700">REL_ID side</text>
+          <text x="735" y="24" font-size="14" fill="#1d4ed8" font-weight="700">ID_KEY side</text>
+
+          <!-- edges -->
+          <line x1="180" y1="70" x2="760" y2="60" stroke="#94a3b8" stroke-width="2" />
+          <line x1="180" y1="70" x2="760" y2="145" stroke="#94a3b8" stroke-width="2" />
+          <line x1="180" y1="150" x2="760" y2="145" stroke="#94a3b8" stroke-width="2" />
+          <line x1="180" y1="230" x2="760" y2="145" stroke="#94a3b8" stroke-width="2" />
+          <line x1="180" y1="230" x2="760" y2="230" stroke="#94a3b8" stroke-width="2" />
+
+          <!-- REL nodes -->
+          <circle cx="180" cy="70" r="26" fill="#ecfeff" stroke="#2dd4bf" stroke-width="2" />
+          <text x="180" y="74" text-anchor="middle" font-size="12" fill="#0f766e" font-weight="700">1001</text>
+
+          <circle cx="180" cy="150" r="26" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
+          <text x="180" y="154" text-anchor="middle" font-size="12" fill="#334155" font-weight="700">2002</text>
+
+          <circle cx="180" cy="230" r="26" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
+          <text x="180" y="234" text-anchor="middle" font-size="12" fill="#334155" font-weight="700">3003</text>
+
+          <!-- KEY nodes -->
+          <rect x="730" y="40" width="64" height="40" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2" />
+          <text x="762" y="64" text-anchor="middle" font-size="11" fill="#1d4ed8" font-weight="700">SBL-55</text>
+
+          <rect x="730" y="125" width="64" height="40" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="2" />
+          <text x="762" y="149" text-anchor="middle" font-size="11" fill="#1d4ed8" font-weight="700">IKB-02</text>
+
+          <rect x="730" y="210" width="64" height="40" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2" />
+          <text x="762" y="234" text-anchor="middle" font-size="11" fill="#334155" font-weight="700">IKB-99</text>
+        </svg>
+      </div>
+
+      <div class="box">
+        <h2>Graphical Walkthrough of Both Functions</h2>
+        <div class="callout-grid">
+          <div class="graph">
+            <div class="mini-title">A) expand_rel_component (node-level BFS)</div>
+            <svg viewBox="0 0 520 260" aria-label="expand_rel_component graphical flow">
+              <text x="20" y="24" font-size="12" fill="#0f172a" font-weight="700">Start frontier = {1001}</text>
+
+              <line x1="110" y1="70" x2="395" y2="70" stroke="#94a3b8" stroke-width="2" />
+              <line x1="110" y1="70" x2="395" y2="140" stroke="#94a3b8" stroke-width="2" />
+              <line x1="110" y1="140" x2="395" y2="140" stroke="#94a3b8" stroke-width="2" />
+              <line x1="110" y1="205" x2="395" y2="140" stroke="#94a3b8" stroke-width="2" />
+
+              <circle cx="110" cy="70" r="20" fill="#dcfce7" stroke="#16a34a" stroke-width="2" />
+              <text x="110" y="74" text-anchor="middle" font-size="11" fill="#14532d" font-weight="700">1001</text>
+
+              <circle cx="110" cy="140" r="20" fill="#ecfeff" stroke="#2dd4bf" stroke-width="2" />
+              <text x="110" y="144" text-anchor="middle" font-size="11" fill="#0f766e" font-weight="700">2002</text>
+
+              <circle cx="110" cy="205" r="20" fill="#ecfeff" stroke="#2dd4bf" stroke-width="2" />
+              <text x="110" y="209" text-anchor="middle" font-size="11" fill="#0f766e" font-weight="700">3003</text>
+
+              <rect x="370" y="50" width="52" height="34" rx="8" fill="#eff6ff" stroke="#60a5fa" stroke-width="2" />
+              <text x="396" y="71" text-anchor="middle" font-size="10" fill="#1d4ed8" font-weight="700">SBL</text>
+
+              <rect x="370" y="122" width="52" height="34" rx="8" fill="#eff6ff" stroke="#60a5fa" stroke-width="2" />
+              <text x="396" y="143" text-anchor="middle" font-size="10" fill="#1d4ed8" font-weight="700">IKB2</text>
+
+              <text x="20" y="242" font-size="11" fill="#334155">Output: visited rel_id = {1001, 2002, 3003}</text>
+            </svg>
+            <div class="legend-line">
+              <span><span class="dot" style="background:#dcfce7;border:1px solid #16a34a;"></span>frontier/current layer</span>
+              <span><span class="dot" style="background:#ecfeff;border:1px solid #2dd4bf;"></span>visited rel_id</span>
+              <span><span class="dot" style="background:#eff6ff;border:1px solid #60a5fa;"></span>id_key hop</span>
+            </div>
+          </div>
+
+          <div class="graph">
+            <div class="mini-title">B) expand_seed_pairs (pair-level BFS)</div>
+            <svg viewBox="0 0 520 260" aria-label="expand_seed_pairs graphical flow">
+              <text x="20" y="24" font-size="12" fill="#0f172a" font-weight="700">Start pairs = {(1001,1001), (3003,3003)}</text>
+
+              <rect x="26" y="48" width="150" height="58" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="2" />
+              <text x="38" y="70" font-size="10" fill="#713f12" font-weight="700">Seed 1001 reaches:</text>
+              <text x="38" y="87" font-size="10" fill="#713f12">1001, 2002, 3003</text>
+
+              <rect x="26" y="122" width="150" height="58" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="2" />
+              <text x="38" y="144" font-size="10" fill="#713f12" font-weight="700">Seed 3003 reaches:</text>
+              <text x="38" y="161" font-size="10" fill="#713f12">3003, 2002, 1001</text>
+
+              <line x1="192" y1="75" x2="318" y2="75" stroke="#64748b" stroke-width="2" marker-end="url(#arr1)" />
+              <line x1="192" y1="150" x2="318" y2="150" stroke="#64748b" stroke-width="2" marker-end="url(#arr1)" />
+
+              <rect x="328" y="52" width="166" height="126" rx="10" fill="#ecfeff" stroke="#22d3ee" stroke-width="2" />
+              <text x="340" y="75" font-size="10" fill="#155e75" font-weight="700">Visited pairs:</text>
+              <text x="340" y="94" font-size="10" fill="#155e75">(1001,1001) (1001,2002)</text>
+              <text x="340" y="112" font-size="10" fill="#155e75">(1001,3003) (3003,3003)</text>
+              <text x="340" y="130" font-size="10" fill="#155e75">(3003,2002) (3003,1001)</text>
+              <text x="340" y="160" font-size="10" fill="#155e75" font-weight="700">Output: candidate seeds</text>
+
+              <defs>
+                <marker id="arr1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 z" fill="#64748b"></path>
+                </marker>
+              </defs>
+
+              <text x="20" y="242" font-size="11" fill="#334155">Output: all (seed_rel_id, rel_id) reachable pairs</text>
+            </svg>
+            <div class="legend-line">
+              <span><span class="dot" style="background:#fefce8;border:1px solid #eab308;"></span>seed-specific expansion</span>
+              <span><span class="dot" style="background:#ecfeff;border:1px solid #22d3ee;"></span>visited pair set</span>
+              <span>anti-join removes already seen pairs</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="box">
+        <h2>Iteration Example (start from frontier = {1001})</h2>
+        <div class="iter-grid">
+          <div class="iter">
+            <h3>Iteration 0</h3>
+            <div class="mono">frontier = {1001}
+visited  = {1001}
+via_id   = {SBL-55, IKB-02}
+next_rel = {1001, 2002, 3003}
+new_rel  = {2002, 3003}</div>
+          </div>
+          <div class="iter">
+            <h3>Iteration 1</h3>
+            <div class="mono">frontier = {2002, 3003}
+visited  = {1001, 2002, 3003}
+via_id   = {SBL-55, IKB-02, IKB-99}
+next_rel = {1001, 2002, 3003}
+new_rel  = {}</div>
+          </div>
+          <div class="iter">
+            <h3>Stop Condition</h3>
+            <div class="mono">No new REL_ID discovered.
+Traversal converges.
+Final connected component:
+{1001, 2002, 3003}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="box">
+        <h2>expand_seed_pairs: What it does and how it differs</h2>
+        <div class="grid-2">
+          <div>
+            <p style="margin-bottom:6px;">
+              <b>expand_seed_pairs</b> runs a BFS-like traversal too, but the unit of traversal is
+              a pair <b>(seed_rel_id, rel_id)</b> instead of just <b>rel_id</b>.
+            </p>
+            <div class="mono">frontier = {(seed, seed)}
+visited  = {(seed, seed)}
+via_id   = (seed, frontier.rel_id) JOIN edges ON rel_id
+next_rel = (seed, via_id.id_key) JOIN edges ON id_key
+new_pairs = next_rel ANTI JOIN visited ON (seed_rel_id, rel_id)
+visited  = visited UNION new_pairs
+frontier = new_pairs</div>
+          </div>
+          <div>
+            <p style="margin-bottom:6px;">
+              Why it exists:
+            </p>
+            <ul>
+              <li><b>expand_rel_component</b> answers: "Which rel_id nodes are impacted?"</li>
+              <li><b>expand_seed_pairs</b> answers: "Which seeds can reach each impacted rel_id?"</li>
+              <li>Under the N->1 rule, each rel_id should resolve to a single active seed; reachability is still computed to validate and propagate mappings.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="box">
+        <h2>Relationship Between expand_rel_component and expand_seed_pairs</h2>
+        <div class="iter-grid">
+          <div class="iter">
+            <h3>Stage A: Impact Expansion</h3>
+            <div class="mono">Input: changed rel_id/seed triggers
+Function: expand_rel_component
+Output: impacted_rel_all
+
+Meaning:
+All rel_id nodes that might need output recomputation.</div>
+          </div>
+          <div class="iter">
+            <h3>Stage B: Seed Reachability</h3>
+            <div class="mono">Input: impacted active seeds + edges
+Function: expand_seed_pairs
+Output: (seed_rel_id, rel_id) pairs
+
+Meaning:
+All candidate seeds that can reach each impacted rel_id.</div>
+          </div>
+          <div class="iter">
+            <h3>Stage C: Final Mapping</h3>
+            <div class="mono">Input: seed pairs for impacted rel_id
+Apply fallback tie-breaker (defensive only):
+- latest_then_numeric OR
+- numeric_then_lex
+
+Output:
+One REL_ID_REGIE_KLANT per REL_ID.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="box">
+        <h2>Why this is useful in incremental ETL</h2>
+        <ul>
+          <li>A single changed edge can affect many nodes several hops away.</li>
+          <li>BFS-style traversal finds the full impacted connected component.</li>
+          <li>Only impacted REL_ID values are recomputed, not the whole output table.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

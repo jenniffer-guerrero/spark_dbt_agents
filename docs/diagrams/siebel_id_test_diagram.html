@@ -129,9 +129,9 @@
 <div class="slide">
 
   <div class="header">
-    <h1>siebel_id_test — Stateful case-driven validation</h1>
-    <p>Runs the incremental update on real shared tables, mutating sources one case at a time and asserting exact output deltas.</p>
-    <span class="badge">Sequential &amp; stateful — tables evolve across all 8 cases &nbsp;·&nbsp; reset_sequence_to_baseline() for full replay</span>
+    <h1>siebel_id_test — Case-driven validation</h1>
+    <p>Runs the incremental update on real shared tables, applying one mutation per test and asserting exact output deltas.</p>
+    <span class="badge">15 pytest cases &nbsp;·&nbsp; each case resets baseline and state snapshots for deterministic replay</span>
   </div>
 
   <!-- Setup -->
@@ -154,8 +154,8 @@
       <div class="s-step">Phase 2</div>
       <div class="s-title">Baseline</div>
       <div class="s-body">
-        Loads fixture CSVs from <b>use_cases/siebel_id/input/</b> into shebang tables.<br>
-        Snapshots current state.<br>
+        Loads fixture CSVs from <b>use_cases/siebel_id/test/</b> into shebang tables.<br>
+        Removes prior state snapshots.<br>
         <b>reset_sequence_to_baseline()</b> restores tables + clears all state_db snapshots.
       </div>
     </div>
@@ -178,7 +178,7 @@
   <div class="loop-wrap">
     <div class="loop-header">
       <div class="loop-title">Per-Case Execution Loop</div>
-      <div class="loop-repeat">↺ repeated for each of the 8 cases</div>
+      <div class="loop-repeat">↺ repeated for each of the 15 cases</div>
     </div>
 
     <div class="loop-steps">
@@ -187,7 +187,7 @@
         <div class="ls-icon">✏️</div>
         <div class="ls-title">Mutate Sources</div>
         <div class="ls-body">
-          Insert, update, or duplicate rows in<br>
+          Reset baseline, then insert, update, or duplicate rows in<br>
           <b>shebang.direct_bank</b> or <b>shebang.ggm_np</b><br>
           using staging-swap writes<br>(safe on local Parquet).
         </div>
@@ -197,7 +197,7 @@
         <div class="ls-icon">🔄</div>
         <div class="ls-title">Run Incremental Update</div>
         <div class="ls-body">
-          Calls <b>run_incremental_update()</b> from the loaded update notebook.<br>
+          Calls <b>run_incremental_update()</b> from the Python module.<br>
           Only impacted rel_ids are reprocessed.<br>
           Returns observability stats.
         </div>
@@ -228,9 +228,14 @@
     </div>
   </div>
 
-  <!-- 8 cases -->
+  <!-- 15 cases -->
   <div class="cases-wrap">
-    <div class="section-label">8 Test Scenarios — run in sequence on the same shared tables</div>
+    <div class="section-label">15 Test Scenarios — each case starts from the same baseline</div>
+    <div style="font-size:.7rem;color:#64748b;line-height:1.45;margin-bottom:10px;">
+      Real baseline rows used in these scenarios include:<br>
+      direct_bank <b>(118220032, 1-1N09820A, Y)</b>, direct_bank <b>(118492640, 1-1TWAZ5GR, Y)</b>, ggm_np <b>(11410074, 1-7JI-23579, N)</b>.<br>
+      Expected baseline output examples from output.csv: <b>105181982 → 118220032</b>, <b>11410074 → 118492640</b>.
+    </div>
     <div class="cases-grid">
 
       <div class="case-chip">
@@ -279,6 +284,48 @@
         <div class="case-num">Case 8</div>
         <div class="case-name">Cross-table insert</div>
         <div class="case-desc">New seed in direct_bank + new rel_id in ggm_np share the same identifier</div>
+      </div>
+
+      <div class="case-chip">
+        <div class="case-num">Case 9</div>
+        <div class="case-name">Cross-table + idempotency</div>
+        <div class="case-desc">New rel_ids in direct_bank and ggm_np tied to existing seed, then immediate rerun with zero delta</div>
+      </div>
+
+      <div class="case-chip">
+        <div class="case-num">Case 10</div>
+        <div class="case-name">Historical rel_id included</div>
+        <div class="case-desc">Closed direct_bank row still contributes historical edge and must appear as REL_ID in output</div>
+      </div>
+
+      <div class="case-chip">
+        <div class="case-num">Case 11</div>
+        <div class="case-name">Closed Y not a seed</div>
+        <div class="case-desc">drc_bnk_f = Y with non-open-ended validity must not be selected as REL_ID_REGIE_KLANT</div>
+      </div>
+
+      <div class="case-chip">
+        <div class="case-num">Case 12</div>
+        <div class="case-name">Cross-source rel_id bridge</div>
+        <div class="case-desc">Same rel_id appears in direct_bank and ggm_np with different id_key values, bridging both key domains in one component</div>
+      </div>
+
+      <div class="case-chip">
+        <div class="case-num">Case 13</div>
+        <div class="case-name">Multi-seed conflict (latest_then_numeric)</div>
+        <div class="case-desc">Two active seeds reach the same rel_id; deterministic winner uses latest seed_valid_from_dts then numeric fallback</div>
+      </div>
+
+      <div class="case-chip">
+        <div class="case-num">Case 14</div>
+        <div class="case-name">Multi-seed conflict (numeric_then_lex)</div>
+        <div class="case-desc">With numeric_then_lex tie-breaker, smallest numeric seed is chosen consistently and idempotently</div>
+      </div>
+
+      <div class="case-chip">
+        <div class="case-num">Case 15</div>
+        <div class="case-name">Duplicate active seed keys (diagnostic-only)</div>
+        <div class="case-desc">One rel_id gets multiple active direct_bank seed keys; logs diagnostics only with zero output delta</div>
       </div>
 
     </div>

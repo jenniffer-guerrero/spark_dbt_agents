@@ -1,9 +1,0 @@
-local_spark_hive:
-  target: dev
-  outputs:
-    dev:
-      type: spark
-      method: session
-      host: localhost
-      schema: "{{ env_var('SPARK_SQL_DATABASE', 'test') }}"
-      threads: 1

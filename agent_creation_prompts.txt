@@ -17,11 +17,6 @@ implement correct, consistent behavior without reading any other file.
 
 Skills to define:
 
-  dbt
-    - Databricks SQL-compatible model creation.
-    - Layer taxonomy: silver (1), gold/feature_set (20), gold/export (29).
-    - Macro reuse and lineage documentation.
-
   spark
     - PySpark and Spark SQL transformations.
     - Modular, testable, Databricks runtime-compatible code.
@@ -29,14 +24,14 @@ Skills to define:
   incremental_mapping
     - Source tables, state tables, and output table with column schemas.
     - Seed selection rule (drc_bnk_f, edl_valid_to_dts sentinel).
-    - Winner rule (min numeric seed, lexical fallback).
+      - Winner rule (latest seed_valid_from_dts, then min numeric seed, lexical fallback).
     - The six phases: build snapshot, detect deltas, compute impact, recompute,
       merge and enforce, persist.
     - BFS parameters (max_iter, checkpoint_every).
     - Observability dict schema.
 
   spark_runtime_reliability
-    - Exact staging-table swap sequence (DROP staging, WRITE, DROP original, RENAME).
+    - Exact in-place overwrite sequence (materialize replacement, INSERT OVERWRITE same table, refresh catalog).
     - Checkpointing pattern for iterative BFS.
     - Cache invalidation after writes.
     - Cheap emptiness check (_has_rows with limit(1)).
@@ -74,7 +69,7 @@ All file content must be in English.
 
 Frontmatter fields:
   name: Data Engineer & Analytics Agent
-  description: (dbt + Spark engineering, incremental mappings, lineage, notebook hardening)
+  description: (Spark engineering, incremental mappings, lineage, notebook hardening)
   argument-hint: (data domain, impacted tables, current behavior, expected output)
   user-invocable: true
   tools: [read, search, edit, execute, todo, agent]
@@ -88,19 +83,37 @@ Body must contain these sections and nothing else:
   Skills table:
     Map each skill name to a one-line description of when to apply it.
     Skills: incremental_mapping, spark_runtime_reliability, notebook_engineering,
-    stateful_test_design, agent_repair_protocol, dbt, spark.
+    stateful_test_design, agent_repair_protocol, spark.
 
   Scope:
-    Build/refactor/review dbt models and Spark logic. Lineage analysis.
+    Build/refactor/review Spark logic. Lineage analysis.
     Test-driven development. Edge cases. Incremental recomputation.
 
   Repository Conventions:
-    Reference .agent-skills.md / dbt for layer taxonomy.
-    English-only for file content; chat may follow user's language.
+    Reference .agent-skills.md for repository conventions.
+    English-only for file content by default.
+    Only allow non-English file content when explicitly requested by the user.
+    Chat may follow user's language.
 
   Working Style (5 rules):
     Confirm assumptions. Minimal targeted changes. Add tests for non-trivial logic.
     Explain lineage impact. Document state-table implications for incremental changes.
+
+  Mandatory Change Protocol (logic updates):
+    Require synchronized updates for:
+    - Python logic and impacted notebooks (`siebel_id_update.ipynb` and `siebel_id_origin.ipynb` when graph/business rules change).
+    - Unit tests and notebook test cases (`tests/test_siebel_incremental.py`, `notebooks/siebel_id_test.ipynb`).
+    - Documentation (`docs/diagrams/*`, and user-facing docs such as README when behavior changes).
+    Must invoke `test_data` for scenario/delta validation and run both pytest and impacted notebook cases before finalizing.
+
+  Continuous Data-Test Collaboration Loop (mandatory):
+    For any fix/refactor/code change with behavioral impact:
+    1) apply minimal change,
+    2) invoke `test_data`,
+    3) apply corrections returned by `test_data`,
+    4) repeat steps 2-3 until `test_data` reports validated,
+    5) then run final validations and finalize.
+    This interaction must be continuous, not one-off.
 
   When Invoked for Repair:
     Follow .agent-skills.md / agent_repair_protocol.
@@ -145,11 +158,24 @@ Body must contain these sections and nothing else:
     Failure classes: logic_defect, data_precondition, environment_runtime.
 
   Constraints:
-    Minimal and reproducible scenarios. Stateful runs. English outputs.
+    Minimal and reproducible scenarios. Stateful runs.
+    English outputs by default.
+    Only allow non-English file output when explicitly requested by the user.
 
   Scenario Catalog:
     Seed creation/removal. Relationship rewiring. Duplicate rows. Cross-table
-    insertions. No-op idempotency reruns.
+    insertions. Cross-source same-rel_id bridge connectivity. No-op idempotency reruns.
+
+  Collaboration protocol for logic changes:
+    Validate parity between code logic, unit tests, notebook tests, and documentation.
+    When called by data-engineer-analytics, return concrete file-targeted corrections
+    for tests, notebook test cases, and doc mismatches caused by logic updates.
+
+  Continuous interaction contract with data-engineer-analytics:
+    Work in an iterative cycle after each change from data-engineer-analytics.
+    Return explicit status on every cycle: validated | needs_fixes | blocked_environment.
+    If needs_fixes, provide concrete file-targeted edits for the next iteration.
+    Continue cycles until validated or clearly blocked by environment/runtime.
 
 
 == PROMPT 4 — Consistency review ==
@@ -166,7 +192,7 @@ Checklist:
   - Every skill referenced by name in an agent file exists in .agent-skills.md.
   - The feedback_schema in stateful_test_design matches what agent_repair_protocol passes.
   - Both agents have the `agent` tool (required for repair delegation).
-  - Layer taxonomy appears only in .agent-skills.md / dbt.
+  - No deprecated external-taxonomy references remain.
   - Winner rule appears only in .agent-skills.md / incremental_mapping.
   - Language policy is stated in both agent files.
   - No model field with an unverified model name exists in any file.

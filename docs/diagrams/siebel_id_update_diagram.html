@@ -373,6 +373,88 @@
 
 
 <!-- ═══════════════════════════════════════════════════
+     SECTION 00 — Input/Output Context
+════════════════════════════════════════════════════ -->
+<div class="section theme-slate">
+  <div class="section-header">
+    <div class="section-num">0</div>
+    <div>
+      <h2>Project Context — Input Shape and Expected Output</h2>
+      <p>Start here to understand what goes in and what this module must produce.</p>
+    </div>
+  </div>
+
+  <div class="step-row">
+    <div class="step-box" style="background:#eff6ff;border:1px solid #bfdbfe;">
+      <div class="sb-icon">📥</div>
+      <div class="sb-title">Input A — direct_bank</div>
+      <div class="sb-desc">
+        Contains <b>REL_ID</b> to <b>NP_SBL_ID</b> relationships and seed flags.
+        Active seed candidates are rows with <b>DRC_BNK_F = 'Y'</b> and open-ended validity.
+      </div>
+    </div>
+    <div class="step-box" style="background:#fff7ed;border:1px solid #fdba74;">
+      <div class="sb-icon">📥</div>
+      <div class="sb-title">Input B — ggm_np</div>
+      <div class="sb-desc">
+        Contains <b>REL_ID</b> to <b>IKB_NO</b> relationships.
+        Used to enrich graph connectivity across customers.
+      </div>
+    </div>
+    <div class="step-box" style="background:#f0fdf4;border:1px solid #86efac;">
+      <div class="sb-icon">⚙️</div>
+      <div class="sb-title">Incremental update engine</div>
+      <div class="sb-desc">
+        Builds edges, detects changes versus previous snapshots,
+        recomputes only impacted customers, then applies deterministic seed selection.
+      </div>
+    </div>
+    <div class="step-box" style="background:#f8fafc;border:1px solid #cbd5e1;">
+      <div class="sb-icon">📤</div>
+      <div class="sb-title">Expected output — shebang.output</div>
+      <div class="sb-desc">
+        Final mapping table with one winner per <b>REL_ID</b>:<br>
+        <b>(REL_ID, REL_ID_REGIE_KLANT)</b>.
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top:14px;">
+    <div class="col">
+      <div class="table-name">Conceptual input shape — direct_bank</div>
+      <div class="table-diagram">
+        <div class="th"><span>REL_ID</span><span>NP_SBL_ID</span><span>DRC_BNK_F</span><span>EDL_VALID_TO_DTS</span></div>
+        <div class="tr"><span>118492640</span><span>1-1TWAZ5GR</span><span>Y</span><span>9999-12-31</span></div>
+        <div class="tr"><span>11410074</span><span>1-1TWAZ5GR</span><span>N</span><span>9999-12-31</span></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="table-name">Conceptual input shape — ggm_np</div>
+      <div class="table-diagram">
+        <div class="th"><span>REL_ID</span><span>IKB_NO</span><span>DEL_F</span><span>EDL_VALID_TO_DTS</span></div>
+        <div class="tr"><span>11410074</span><span>1-7JI-23579</span><span>N</span><span>9999-12-31</span></div>
+        <div class="tr"><span>117786942</span><span>1-7JI-23579</span><span>N</span><span>9999-12-31</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px;">
+    <div class="table-name">Expected output shape — target_db.output</div>
+    <div class="table-diagram">
+      <div class="th"><span>REL_ID</span><span>REL_ID_REGIE_KLANT</span></div>
+      <div class="tr"><span>11410074</span><span>118492640</span></div>
+      <div class="tr"><span>117786942</span><span>118492640</span></div>
+      <div class="tr"><span>118492640</span><span>118492640</span></div>
+    </div>
+  </div>
+
+  <div class="info-box slate" style="margin-top:14px;">
+    <b>Reading note:</b> Sections below explain <i>how</i> the module gets from these two inputs to the final output mapping while processing only impacted records incrementally.
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
      SECTION 0 — Big Picture
 ════════════════════════════════════════════════════ -->
 <div class="section theme-slate">
@@ -450,7 +532,7 @@
       </div>
       <div class="info-box green">
         <b>seed / REL_ID_REGIE_KLANT</b> — Master customer<br>
-        <span style="font-size:.72rem;">A special customer flagged as a "master" (drc_bnk_f = 'Y'). All connected customers get assigned this master's ID.</span>
+        <span style="font-size:.72rem;">A special customer flagged as a "master" (drc_bnk_f = 'Y' and open-ended validity). All connected customers get assigned this master's ID.</span>
       </div>
       <div class="info-box orange">
         <b>edge</b> — Connection / link<br>
@@ -466,6 +548,61 @@
       </div>
     </div>
   </div>
+
+  <div style="margin-top:24px;">
+    <div class="table-name">Algorithm call flow — which function is called at each step</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:8px;align-items:stretch;">
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;position:relative;">
+        <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;color:#0f766e;text-transform:uppercase;">Step 1</div>
+        <div style="font-size:.8rem;font-weight:700;color:#0f172a;margin-top:3px;">Load + normalize</div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.66rem;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:6px;margin-top:6px;white-space:normal;overflow-wrap:anywhere;word-break:break-word;">normalize_active_direct_bank(...)
+normalize_active_ggm_np(...)</div>
+        <div style="font-size:.7rem;color:#64748b;margin-top:6px;">Build canonical historical edges and active seed candidates.</div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;position:relative;">
+        <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;color:#1d4ed8;text-transform:uppercase;">Step 2</div>
+        <div style="font-size:.8rem;font-weight:700;color:#0f172a;margin-top:3px;">Compare snapshots</div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.66rem;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:6px;margin-top:6px;white-space:normal;overflow-wrap:anywhere;word-break:break-word;">anti_diff(edges_cur, edges_prev, ...)
+      anti_diff(seeds_cur, seeds_prev, ...)</div>
+        <div style="font-size:.7rem;color:#64748b;margin-top:6px;">Detect edge and seed deltas since previous run.</div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;position:relative;">
+        <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;color:#7c3aed;text-transform:uppercase;">Step 3</div>
+        <div style="font-size:.8rem;font-weight:700;color:#0f172a;margin-top:3px;">Impact expansion</div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.66rem;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:6px;margin-top:6px;white-space:normal;overflow-wrap:anywhere;word-break:break-word;">expand_rel_component(impact_start_rel, edges_full, ...)</div>
+        <div style="font-size:.7rem;color:#64748b;margin-top:6px;">Find all impacted rel_id nodes through BFS-style graph traversal.</div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;position:relative;">
+        <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;color:#c2410c;text-transform:uppercase;">Step 4</div>
+        <div style="font-size:.8rem;font-weight:700;color:#0f172a;margin-top:3px;">Seed reachability</div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.66rem;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:6px;margin-top:6px;white-space:normal;overflow-wrap:anywhere;word-break:break-word;">expand_seed_pairs(impacted_active_seeds, edges_full, ...)</div>
+        <div style="font-size:.7rem;color:#64748b;margin-top:6px;">Compute which active seeds can reach each impacted rel_id.</div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;position:relative;">
+        <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;color:#15803d;text-transform:uppercase;">Step 5</div>
+        <div style="font-size:.8rem;font-weight:700;color:#0f172a;margin-top:3px;">Resolve winner per REL_ID</div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.66rem;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:6px;margin-top:6px;white-space:normal;overflow-wrap:anywhere;word-break:break-word;">Window.row_number(...) OR
+groupBy(...).agg(min(...))</div>
+        <div style="font-size:.7rem;color:#64748b;margin-top:6px;">If multiple active seeds reach the same REL_ID, choose one deterministically using the configured tie-breaker.</div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:10px;position:relative;">
+        <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;color:#0f766e;text-transform:uppercase;">Step 6</div>
+        <div style="font-size:.8rem;font-weight:700;color:#0f172a;margin-top:3px;">Persist + audit</div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.66rem;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:6px;margin-top:6px;white-space:normal;overflow-wrap:anywhere;word-break:break-word;">overwrite_table_with_staging_swap(...)
+for output + snapshots + run_audit</div>
+        <div style="font-size:.7rem;color:#64748b;margin-top:6px;">Atomically store output, next state, and observability metrics.</div>
+      </div>
+    </div>
+
+    <div class="info-box slate" style="margin-top:10px;font-size:.73rem;">
+      <b>Function relationship summary:</b> <b>expand_rel_component</b> defines <i>where</i> recomputation is needed (impacted rel_id scope), while <b>expand_seed_pairs</b> propagates <i>which active seeds</i> reach that scope and Step 5 selects one winner deterministically per REL_ID.
+    </div>
+  </div>
 </div>
 
 
@@ -477,7 +614,10 @@
     <div class="section-num">1</div>
     <div>
       <h2>Reading &amp; Cleaning the Source Data</h2>
-      <p>Two source tables are loaded and cleaned. Only active, valid records are kept.</p>
+      <p>Two source tables are loaded and cleaned. Historical connectivity is preserved for edges, while seed eligibility is filtered separately.</p>
+      <div class="info-box slate" style="margin-top:8px;font-size:.72rem;">
+        <b>Step mapping:</b> <b>Step 1</b> (Load + normalize) → <code>normalize_active_direct_bank(...)</code>, <code>normalize_active_ggm_np(...)</code>, <code>assert_single_active_seed_per_rel_id(...)</code>
+      </div>
     </div>
   </div>
 
@@ -487,20 +627,20 @@
       <div class="table-name">Source table 1 — direct_bank</div>
       <div class="table-diagram">
         <div class="th"><span>rel_id</span><span>np_sbl_id</span><span>drc_bnk_f</span><span>edl_valid_to_dts</span></div>
-        <div class="tr highlight"><span>1001</span><span>SBL-55</span><span>Y</span><span>9999-12-31</span></div>
-        <div class="tr"><span>1002</span><span>SBL-55</span><span>N</span><span>9999-12-31</span></div>
-        <div class="tr removed"><span>1003</span><span>SBL-77</span><span>N</span><span>2024-06-01</span></div>
-        <div class="tr"><span>1004</span><span>SBL-88</span><span>N</span><span>9999-12-31</span></div>
+        <div class="tr highlight"><span>118492640</span><span>1-1TWAZ5GR</span><span>Y</span><span>9999-12-31</span></div>
+        <div class="tr"><span>11410074</span><span>1-1TWAZ5GR</span><span>N</span><span>9999-12-31</span></div>
+        <div class="tr"><span>115379534</span><span>1-1N09820A</span><span>N</span><span>2024-06-01</span></div>
+        <div class="tr"><span>117786942</span><span>1-1B89RM5A</span><span>N</span><span>9999-12-31</span></div>
       </div>
       <div class="legend" style="margin-top:8px;">
-        <div class="legend-item"><div class="legend-rect" style="background:#fef9c3;border:1px solid #fde047;"></div>seed row (drc_bnk_f = Y)</div>
-        <div class="legend-item"><div class="legend-rect" style="background:#fef2f2;border:1px solid #fca5a5;"></div>excluded (expired date)</div>
+        <div class="legend-item"><div class="legend-rect" style="background:#fef9c3;border:1px solid #fde047;"></div>seed-eligible row (drc_bnk_f = Y and open-ended)</div>
+        <div class="legend-item"><div class="legend-rect" style="background:#fff;border:1px solid #e2e8f0;"></div>historical rows are still kept for edges</div>
       </div>
       <div class="info-box blue" style="margin-top:14px;font-size:.75rem;">
         <b>Filters applied:</b><br>
-        ✓ Keep only rows where <b>edl_valid_to_dts = '9999-12-31'</b> (still active — no del_f column here)<br>
+        ✓ Keep all historical rows (no drc_bnk_f / validity filter for edges)<br>
         ✓ Drop rows with blank or null rel_id / np_sbl_id<br>
-        ✓ When the same (rel_id + np_sbl_id) pair appears multiple times, keep the most recent row by <b>edl_valid_from_dts</b> — ties broken by <b>drc_bnk_f = 'Y' first</b> (seed rows win)
+        ✓ When the same (rel_id + np_sbl_id) pair appears multiple times, keep the most recent row by <b>edl_valid_from_dts</b>
       </div>
     </div>
 
@@ -509,10 +649,10 @@
       <div class="table-name">Source table 2 — ggm_np</div>
       <div class="table-diagram">
         <div class="th"><span>rel_id</span><span>ikb_no</span><span>del_f</span><span>edl_valid_to_dts</span></div>
-        <div class="tr"><span>1002</span><span>IKB-99</span><span>N</span><span>9999-12-31</span></div>
-        <div class="tr"><span>1004</span><span>IKB-99</span><span>N</span><span>9999-12-31</span></div>
-        <div class="tr"><span>1005</span><span>IKB-11</span><span>Y</span><span>9999-12-31</span></div>
-        <div class="tr"><span>1006</span><span>IKB-22</span><span>N</span><span>2023-01-01</span></div>
+        <div class="tr"><span>11410074</span><span>1-7JI-23579</span><span>N</span><span>9999-12-31</span></div>
+        <div class="tr"><span>117786942</span><span>1-7JI-23579</span><span>N</span><span>9999-12-31</span></div>
+        <div class="tr"><span>105181982</span><span>1-6JEK8TE</span><span>Y</span><span>9999-12-31</span></div>
+        <div class="tr"><span>118220032</span><span>1-1N09820A</span><span>N</span><span>2023-01-01</span></div>
         <div class="tr removed"><span></span><span></span><span></span><span>(null)</span></div>
       </div>
       <div class="legend" style="margin-top:8px;">
@@ -532,18 +672,18 @@
   </div>
 
   <div style="margin-top:24px;">
-    <div class="table-name">Result: unified edge list — active (direct_bank) + historical (ggm_np)</div>
+    <div class="table-name">Result: unified edge list — historical (direct_bank) + historical (ggm_np)</div>
     <div class="two-col" style="margin-top:8px;">
       <div class="col">
         <div class="table-diagram">
           <div class="th"><span>source_table</span><span>rel_id</span><span>id_key</span></div>
-          <div class="tr"><span>direct_bank</span><span>1001</span><span>SBL-55</span></div>
-          <div class="tr"><span>direct_bank</span><span>1002</span><span>SBL-55</span></div>
-          <div class="tr"><span>direct_bank</span><span>1004</span><span>SBL-88</span></div>
-          <div class="tr"><span>ggm_np</span><span>1002</span><span>IKB-99</span></div>
-          <div class="tr"><span>ggm_np</span><span>1004</span><span>IKB-99</span></div>
-          <div class="tr" style="color:#c2410c;"><span>ggm_np</span><span>1005</span><span>IKB-11</span></div>
-          <div class="tr" style="color:#c2410c;"><span>ggm_np</span><span>1006</span><span>IKB-22</span></div>
+          <div class="tr"><span>direct_bank</span><span>118492640</span><span>1-1TWAZ5GR</span></div>
+          <div class="tr"><span>direct_bank</span><span>11410074</span><span>1-1TWAZ5GR</span></div>
+          <div class="tr"><span>direct_bank</span><span>117786942</span><span>1-1B89RM5A</span></div>
+          <div class="tr"><span>ggm_np</span><span>11410074</span><span>1-7JI-23579</span></div>
+          <div class="tr"><span>ggm_np</span><span>117786942</span><span>1-7JI-23579</span></div>
+          <div class="tr" style="color:#c2410c;"><span>ggm_np</span><span>105181982</span><span>1-6JEK8TE</span></div>
+          <div class="tr" style="color:#c2410c;"><span>ggm_np</span><span>118220032</span><span>1-1N09820A</span></div>
         </div>
         <div class="legend" style="margin-top:6px;">
           <div class="legend-item"><div class="legend-rect" style="background:#fff7ed;border:1px solid #fdba74;"></div>historical ggm_np rows (del_f='Y' or expired) now also included</div>
@@ -553,11 +693,11 @@
         <div class="info-box green" style="margin-bottom:10px;">
           <b>Seeds — from direct_bank only</b><br><br>
           Rows where <b>drc_bnk_f = 'Y'</b> and <b>edl_valid_to_dts = '9999-12-31'</b> become master customers (seeds). Seeds are <b>not</b> taken from ggm_np.<br><br>
-          <span class="pill pill-green">seed_rel_id: 1001</span><br><br>
-          Every customer reachable from <b>1001</b> through any edge (active or historical) will be assigned <b>REL_ID_REGIE_KLANT = 1001</b>.
+          <span class="pill pill-green">seed_rel_id: 118492640</span><br><br>
+          Every customer reachable from <b>118492640</b> through any edge (active or historical) will be assigned <b>REL_ID_REGIE_KLANT = 118492640</b>.
         </div>
         <div class="info-box orange" style="font-size:.74rem;">
-          <b>Key asymmetry:</b> direct_bank edges are filtered to active only. ggm_np edges include the full history — past connections can still link customers together even after a record was deleted or expired.
+          <b>Key asymmetry:</b> direct_bank and ggm_np both contribute historical edges for connectivity, but seed eligibility is evaluated only from direct_bank using Y + open-ended validity.
         </div>
       </div>
     </div>
@@ -574,6 +714,9 @@
     <div>
       <h2>Detecting What Changed (Delta Detection)</h2>
       <p>The freshly built data is compared against the saved state from the previous run. Only differences matter.</p>
+      <div class="info-box slate" style="margin-top:8px;font-size:.72rem;">
+        <b>Step mapping:</b> <b>Step 2</b> (Compare snapshots) → <code>anti_diff(edges_cur, edges_prev, ...)</code>, <code>anti_diff(seeds_cur, seeds_prev, ...)</code>
+      </div>
     </div>
   </div>
 
@@ -589,9 +732,9 @@
           <div class="table-name">Previous run's snapshot</div>
           <div class="table-diagram">
             <div class="th"><span>rel_id</span><span>id_key</span></div>
-            <div class="tr"><span>1001</span><span>SBL-55</span></div>
-            <div class="tr"><span>1002</span><span>SBL-55</span></div>
-            <div class="tr"><span>1003</span><span>SBL-77</span></div>
+            <div class="tr"><span>118492640</span><span>1-1TWAZ5GR</span></div>
+            <div class="tr"><span>11410074</span><span>1-1TWAZ5GR</span></div>
+            <div class="tr"><span>115379534</span><span>1-1N09820A</span></div>
           </div>
         </div>
         <div style="font-size:1.5rem;color:#94a3b8;flex-shrink:0;">vs</div>
@@ -599,17 +742,17 @@
           <div class="table-name">Current run's edges</div>
           <div class="table-diagram">
             <div class="th"><span>rel_id</span><span>id_key</span></div>
-            <div class="tr"><span>1001</span><span>SBL-55</span></div>
-            <div class="tr"><span>1002</span><span>SBL-55</span></div>
-            <div class="tr added"><span>1004</span><span>SBL-88</span></div>
+            <div class="tr"><span>118492640</span><span>1-1TWAZ5GR</span></div>
+            <div class="tr"><span>11410074</span><span>1-1TWAZ5GR</span></div>
+            <div class="tr added"><span>117786942</span><span>1-1B89RM5A</span></div>
           </div>
         </div>
       </div>
 
       <div class="table-diagram">
         <div class="th"><span>Change type</span><span>rel_id</span><span>id_key</span></div>
-        <div class="tr added"><span>➕ added</span><span>1004</span><span>SBL-88</span></div>
-        <div class="tr removed"><span>➖ removed</span><span>1003</span><span>SBL-77</span></div>
+        <div class="tr added"><span>➕ added</span><span>117786942</span><span>1-1B89RM5A</span></div>
+        <div class="tr removed"><span>➖ removed</span><span>115379534</span><span>1-1N09820A</span></div>
       </div>
       <div class="legend" style="margin-top:8px;">
         <div class="legend-item"><div class="legend-rect" style="background:#f0fdf4;border:1px solid #86efac;"></div>added edge</div>
@@ -657,6 +800,9 @@
     <div>
       <h2>Walking the Graph — Finding Every Affected Customer</h2>
       <p>A change in one connection can ripple through an entire network. This step finds all customers that need to be updated.</p>
+      <div class="info-box slate" style="margin-top:8px;font-size:.72rem;">
+        <b>Step mapping:</b> <b>Step 3</b> (Impact expansion) → <code>expand_rel_component(impact_start_rel, edges_full, ...)</code>
+      </div>
     </div>
   </div>
 
@@ -666,43 +812,43 @@
       <div class="graph-area">
         <svg width="480" height="300" viewBox="0 0 480 300" fill="none" xmlns="http://www.w3.org/2000/svg">
           <!-- Edges (lines) -->
-          <!-- 1001 -- SBL-55 -->
+          <!-- 118492640 -- 1-1TWAZ5GR -->
           <line x1="100" y1="80" x2="240" y2="80" stroke="#93c5fd" stroke-width="2"/>
-          <!-- 1002 -- SBL-55 -->
+          <!-- 11410074 -- 1-1TWAZ5GR -->
           <line x1="100" y1="160" x2="240" y2="80" stroke="#93c5fd" stroke-width="2"/>
-          <!-- 1002 -- IKB-99 -->
+          <!-- 11410074 -- 1-7JI-23579 -->
           <line x1="100" y1="160" x2="240" y2="200" stroke="#93c5fd" stroke-width="2"/>
-          <!-- 1004 -- IKB-99 -->
+          <!-- 117786942 -- 1-7JI-23579 -->
           <line x1="100" y1="240" x2="240" y2="200" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="6 3"/>
-          <!-- 1004 -- SBL-88 -->
+          <!-- 117786942 -- 1-1B89RM5A -->
           <line x1="100" y1="240" x2="380" y2="240" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="6 3"/>
 
           <!-- id_key nodes (diamonds shape via rect) -->
-          <!-- SBL-55 -->
+          <!-- 1-1TWAZ5GR -->
           <rect x="200" y="60" width="80" height="40" rx="8" fill="#ede9fe" stroke="#a855f7" stroke-width="1.5"/>
-          <text x="240" y="84" text-anchor="middle" font-size="11" fill="#7c3aed" font-weight="600">SBL-55</text>
+          <text x="240" y="84" text-anchor="middle" font-size="11" fill="#7c3aed" font-weight="600">1-1TWAZ5GR</text>
 
-          <!-- IKB-99 -->
+          <!-- 1-7JI-23579 -->
           <rect x="200" y="180" width="80" height="40" rx="8" fill="#ede9fe" stroke="#a855f7" stroke-width="1.5"/>
-          <text x="240" y="204" text-anchor="middle" font-size="11" fill="#7c3aed" font-weight="600">IKB-99</text>
+          <text x="240" y="204" text-anchor="middle" font-size="11" fill="#7c3aed" font-weight="600">1-7JI-23579</text>
 
-          <!-- SBL-88 (new) -->
+          <!-- 1-1B89RM5A (new) -->
           <rect x="340" y="220" width="80" height="40" rx="8" fill="#fef9c3" stroke="#fde047" stroke-width="1.5"/>
-          <text x="380" y="244" text-anchor="middle" font-size="11" fill="#713f12" font-weight="600">SBL-88 ✦</text>
+          <text x="380" y="244" text-anchor="middle" font-size="11" fill="#713f12" font-weight="600">1-1B89RM5A ✦</text>
 
           <!-- rel_id nodes (circles) -->
-          <!-- 1001 = seed -->
+          <!-- 118492640 = seed -->
           <circle cx="100" cy="80" r="26" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
-          <text x="100" y="75" text-anchor="middle" font-size="10" fill="#15803d" font-weight="700">1001</text>
+          <text x="100" y="75" text-anchor="middle" font-size="10" fill="#15803d" font-weight="700">118492640</text>
           <text x="100" y="88" text-anchor="middle" font-size="8" fill="#16a34a">SEED</text>
 
-          <!-- 1002 -->
+          <!-- 11410074 -->
           <circle cx="100" cy="160" r="24" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
-          <text x="100" y="164" text-anchor="middle" font-size="11" fill="#1d4ed8" font-weight="600">1002</text>
+          <text x="100" y="164" text-anchor="middle" font-size="11" fill="#1d4ed8" font-weight="600">11410074</text>
 
-          <!-- 1004 = new node (impacted) -->
+          <!-- 117786942 = new node (impacted) -->
           <circle cx="100" cy="240" r="24" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
-          <text x="100" y="235" text-anchor="middle" font-size="10" fill="#92400e" font-weight="700">1004</text>
+          <text x="100" y="235" text-anchor="middle" font-size="10" fill="#92400e" font-weight="700">117786942</text>
           <text x="100" y="248" text-anchor="middle" font-size="8" fill="#b45309">NEW</text>
 
           <!-- Expansion wave indicator -->
@@ -727,26 +873,26 @@
 
     <div class="col-narrow">
       <div class="info-box purple" style="margin-bottom:12px;">
-        <b>The problem:</b> A new connection (edge) was added for customer <b>1004</b>. But 1004 shares <b>IKB-99</b> with customer <b>1002</b>, who shares <b>SBL-55</b> with the seed <b>1001</b>. The whole chain is affected.
+        <b>The problem:</b> A new connection (edge) was added for customer <b>117786942</b>. But 117786942 shares <b>1-7JI-23579</b> with customer <b>11410074</b>, who shares <b>1-1TWAZ5GR</b> with the seed <b>118492640</b>. The whole chain is affected.
       </div>
 
       <div class="table-name">BFS — Breadth-First Search (wave expansion)</div>
       <div style="display:flex;flex-direction:column;gap:0;margin-top:6px;">
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:8px 8px 0 0;border:1px solid #e2e8f0;font-size:.75rem;">
           <span style="background:#fef3c7;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;">0</span>
-          <span><b>Start:</b> changed rel_ids = {1004}</span>
+          <span><b>Start:</b> changed rel_ids = {117786942}</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#faf5ff;border:1px solid #e2e8f0;border-top:none;font-size:.75rem;">
           <span style="background:#ede9fe;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;">1</span>
-          <span>1004 → <b>IKB-99, SBL-88</b><br>IKB-99 → <b>1002</b> (new!)</span>
+          <span>117786942 → <b>1-7JI-23579, 1-1B89RM5A</b><br>1-7JI-23579 → <b>11410074</b> (new!)</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#ede9fe;border:1px solid #e2e8f0;border-top:none;font-size:.75rem;">
           <span style="background:#a855f7;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;color:#fff;">2</span>
-          <span>1002 → <b>SBL-55</b><br>SBL-55 → <b>1001</b> (new!)</span>
+          <span>11410074 → <b>1-1TWAZ5GR</b><br>1-1TWAZ5GR → <b>118492640</b> (new!)</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:0 0 8px 8px;border:1px solid #e2e8f0;border-top:none;font-size:.75rem;">
           <span style="background:#dcfce7;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;">✓</span>
-          <span><b>No new nodes found.</b> Stop.<br>Impacted: {1001, 1002, 1004}</span>
+          <span><b>No new nodes found.</b> Stop.<br>Impacted: {118492640, 11410074, 117786942}</span>
         </div>
       </div>
 
@@ -767,60 +913,64 @@
     <div>
       <h2>Recomputing the Affected Area — Assigning a Master to Each Customer</h2>
       <p>For all impacted customers, the system walks the graph again — but this time it tracks which seed (master) it started from.</p>
+      <div class="info-box slate" style="margin-top:8px;font-size:.72rem;">
+        <b>Step mapping:</b> <b>Step 4</b> (Seed reachability) + <b>Step 5</b> (Deterministic winner selection) → <code>expand_seed_pairs(...)</code>, window/group ranking policy
+      </div>
     </div>
   </div>
 
   <div class="two-col">
     <div class="col">
       <div class="info-box teal" style="margin-bottom:16px;">
-        <b>Goal:</b> For each impacted <b>rel_id</b>, find all the seeds that can reach it through the network. Then pick one winner using a deterministic rule (same input always gives same output).
+        <b>Goal:</b> For each impacted <b>rel_id</b>, assign exactly one <b>REL_ID_REGIE_KLANT</b>. If multiple active seed candidates are reachable, resolve with deterministic tie-break.
       </div>
 
       <div class="table-name">Seed pair expansion result — (seed, rel_id) pairs</div>
       <div class="table-diagram" style="margin-top:6px;">
         <div class="th"><span>seed_rel_id</span><span>rel_id</span><span>note</span></div>
-        <div class="tr"><span>1001</span><span>1001</span><span>seed reaches itself</span></div>
-        <div class="tr"><span>1001</span><span>1002</span><span>via SBL-55</span></div>
-        <div class="tr highlight"><span>1001</span><span>1004</span><span>via IKB-99 → 1002 → SBL-55</span></div>
+        <div class="tr"><span>118492640</span><span>118492640</span><span>seed reaches itself</span></div>
+        <div class="tr"><span>118492640</span><span>11410074</span><span>via 1-1TWAZ5GR</span></div>
+        <div class="tr highlight"><span>118492640</span><span>117786942</span><span>via 1-7JI-23579 → 11410074 → 1-1TWAZ5GR</span></div>
       </div>
 
       <div class="big-arrow" style="margin:12px 0;">↓</div>
 
-      <div class="table-name">Winner selection — one REL_ID_REGIE_KLANT per customer</div>
+      <div class="table-name">N->1 validation and assignment — one REL_ID_REGIE_KLANT per customer</div>
       <div class="table-diagram">
         <div class="th"><span>REL_ID</span><span>REL_ID_REGIE_KLANT</span></div>
-        <div class="tr added"><span>1001</span><span>1001</span></div>
-        <div class="tr added"><span>1002</span><span>1001</span></div>
-        <div class="tr added"><span>1004</span><span>1001</span></div>
+        <div class="tr added"><span>118492640</span><span>118492640</span></div>
+        <div class="tr added"><span>11410074</span><span>118492640</span></div>
+        <div class="tr added"><span>117786942</span><span>118492640</span></div>
       </div>
     </div>
 
     <div class="col">
-      <div class="table-name">How the winner is chosen (tie-breaker rule)</div>
+      <div class="table-name">How winner selection works when multiple seeds are reachable</div>
 
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px;">
         <div class="info-box green">
-          <b>Option A (default): numeric_then_lex</b><br>
+          <b>Option A (default): latest_then_numeric</b><br>
           <span style="font-size:.72rem;">
-            1. Try to convert each seed ID to a number.<br>
-            2. The <b>smallest number</b> wins.<br>
-            3. If none are numeric, the <b>alphabetically smallest</b> seed ID wins.<br><br>
-            <i>Example: seeds {1001, 999, "ABX-5"} → 999 wins (smallest number)</i>
+            1. Pick the seed with the <b>most recent activation date</b> (seed_valid_from_dts).<br>
+            2. If dates tie, the <b>smallest numeric</b> seed ID wins.<br>
+            3. If numeric comparison is not possible, use <b>alphabetical order</b>.<br><br>
+            <i>Example: seeds {118220032 (2023), 118492640 (2024)} → 118492640 wins (most recent)</i>
           </span>
         </div>
 
         <div class="info-box blue">
-          <b>Option B: latest_then_numeric</b><br>
+          <b>Option B: numeric_then_lex</b><br>
           <span style="font-size:.72rem;">
-            1. The seed with the <b>most recent activation date</b> wins.<br>
-            2. Ties broken by smallest number, then alphabetically.<br><br>
-            <i>Example: seeds {1001 (2023), 999 (2024)} → 999 wins (most recent)</i>
+            1. Convert each seed ID to numeric when possible.<br>
+            2. The <b>smallest numeric</b> seed wins.<br>
+            3. If none are numeric, the <b>alphabetically smallest</b> seed wins.<br><br>
+            <i>Example: seeds {118492640, 118220032, "A-LEGACY"} → 118220032 wins (smallest numeric)</i>
           </span>
         </div>
 
         <div class="info-box slate">
           <b>Why deterministic?</b><br>
-          <span style="font-size:.72rem;">Running the same data twice must always produce the same result. A deterministic rule (like "smallest number") guarantees this — there is no randomness.</span>
+          <span style="font-size:.72rem;">Running the same data twice must always produce the same result. A deterministic priority order (latest date, then numeric, then lexical) guarantees stable outputs.</span>
         </div>
       </div>
     </div>
@@ -837,6 +987,9 @@
     <div>
       <h2>Merging the Final Output</h2>
       <p>Unchanged rows are kept as-is. Only the affected rows are replaced with the freshly computed ones.</p>
+      <div class="info-box slate" style="margin-top:8px;font-size:.72rem;">
+        <b>Step mapping:</b> <b>Step 5</b> continuation (merge + active-seed guard) → impacted-row replacement and final active-seed join filter on <code>REL_ID_REGIE_KLANT</code>
+      </div>
     </div>
   </div>
 
@@ -850,20 +1003,20 @@
             <div class="table-name" style="text-align:center;">Previous output</div>
             <div class="table-diagram">
               <div class="th"><span>REL_ID</span><span>REL_ID_REGIE_KLANT</span></div>
-              <div class="tr" style="opacity:.5;text-decoration:line-through;color:#94a3b8;"><span>1001</span><span>OLD</span></div>
-              <div class="tr" style="opacity:.5;text-decoration:line-through;color:#94a3b8;"><span>1002</span><span>OLD</span></div>
-              <div class="tr"><span>2001</span><span>2001</span></div>
-              <div class="tr"><span>2002</span><span>2001</span></div>
-              <div class="tr" style="opacity:.5;text-decoration:line-through;color:#94a3b8;"><span>1004</span><span>OLD</span></div>
+              <div class="tr" style="opacity:.5;text-decoration:line-through;color:#94a3b8;"><span>118492640</span><span>OLD</span></div>
+              <div class="tr" style="opacity:.5;text-decoration:line-through;color:#94a3b8;"><span>11410074</span><span>OLD</span></div>
+              <div class="tr"><span>105181982</span><span>118220032</span></div>
+              <div class="tr"><span>115379534</span><span>118220032</span></div>
+              <div class="tr" style="opacity:.5;text-decoration:line-through;color:#94a3b8;"><span>117786942</span><span>OLD</span></div>
             </div>
           </div>
           <div style="flex:1;max-width:200px;">
             <div class="table-name" style="text-align:center;">Recomputed rows</div>
             <div class="table-diagram">
               <div class="th"><span>REL_ID</span><span>REL_ID_REGIE_KLANT</span></div>
-              <div class="tr added"><span>1001</span><span>1001</span></div>
-              <div class="tr added"><span>1002</span><span>1001</span></div>
-              <div class="tr added"><span>1004</span><span>1001</span></div>
+              <div class="tr added"><span>118492640</span><span>118492640</span></div>
+              <div class="tr added"><span>11410074</span><span>118492640</span></div>
+              <div class="tr added"><span>117786942</span><span>118492640</span></div>
             </div>
           </div>
         </div>
@@ -874,11 +1027,11 @@
           <div class="table-name" style="text-align:center;">New output (after filter)</div>
           <div class="table-diagram">
             <div class="th"><span>REL_ID</span><span>REL_ID_REGIE_KLANT</span></div>
-            <div class="tr"><span>2001</span><span>2001</span></div>
-            <div class="tr"><span>2002</span><span>2001</span></div>
-            <div class="tr added"><span>1001</span><span>1001</span></div>
-            <div class="tr added"><span>1002</span><span>1001</span></div>
-            <div class="tr added"><span>1004</span><span>1001</span></div>
+            <div class="tr"><span>105181982</span><span>118220032</span></div>
+            <div class="tr"><span>115379534</span><span>118220032</span></div>
+            <div class="tr added"><span>118492640</span><span>118492640</span></div>
+            <div class="tr added"><span>11410074</span><span>118492640</span></div>
+            <div class="tr added"><span>117786942</span><span>118492640</span></div>
           </div>
         </div>
       </div>
@@ -894,7 +1047,7 @@
 
       <div class="info-box orange">
         <b>Why drop rows when the seed disappears?</b><br>
-        <span style="font-size:.73rem;">If a customer was assigned to master "1001" and "1001" is no longer flagged as a master customer (drc_bnk_f changed from Y to N), then the assignment is no longer valid. Those rows are removed from the output entirely.</span>
+        <span style="font-size:.73rem;">If a customer was assigned to master "118492640" and "118492640" is no longer flagged as a master customer (drc_bnk_f changed from Y to N), then the assignment is no longer valid. Those rows are removed from the output entirely.</span>
       </div>
 
       <div class="info-box slate" style="margin-top:12px;">
@@ -914,6 +1067,9 @@
     <div>
       <h2>Saving Results Safely — The Staging Table Swap</h2>
       <p>Writing directly to a live table is risky. Instead, the system uses a "swap" technique to make writes atomic and safe.</p>
+      <div class="info-box slate" style="margin-top:8px;font-size:.72rem;">
+        <b>Step mapping:</b> <b>Step 6</b> (Persist + audit) → <code>overwrite_table_with_staging_swap(...)</code> for output, snapshots, and run audit tables
+      </div>
     </div>
   </div>
 
@@ -1165,7 +1321,7 @@
       <b>Configuration parameters:</b><br>
       <span class="pill">max_iter</span> max graph expansion steps (default 40)<br>
       <span class="pill">checkpoint_every</span> save to disk every N steps (default 2)<br>
-      <span class="pill">seed_tie_breaker</span> winner selection rule<br>
+      <span class="pill">seed_tie_breaker</span> deterministic winner selection rule<br>
       <span class="pill">fail_on_incomplete</span> error on truncation (default true)
     </div>
   </div>
@@ -1315,7 +1471,7 @@
     </div>
   </div>
 
-  <div class="table-name" style="margin-bottom:12px;">Test cases (9 total)</div>
+  <div class="table-name" style="margin-bottom:12px;">Test cases (15 total)</div>
 
   <!-- ── Case 1 ── -->
   <div class="case-card pass">
@@ -1493,7 +1649,7 @@
         <span class="change-tag tag-insert">INSERT</span> <b>ggm_np</b><br>
         <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
           rel_id = 118220032<br>
-          ikb_no = '1-ALT-IKB-118220032'<br>
+          ikb_no = '1-ALT-1-6JEK8TE8220032'<br>
           del_f = 'N'<br>
           edl_valid_to_dts = '9999-12-31'
         </div>
@@ -1501,9 +1657,9 @@
       <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
         <div class="tb-label">Why no change</div>
         <ul>
-          <li>New edge: <b>118220032 ↔ 1-ALT-IKB-118220032</b></li>
+          <li>New edge: <b>118220032 ↔ 1-ALT-1-6JEK8TE8220032</b></li>
           <li>118220032 is impacted (edge changed)</li>
-          <li>Graph expansion: no other rel_id shares <b>1-ALT-IKB-118220032</b></li>
+          <li>Graph expansion: no other rel_id shares <b>1-ALT-1-6JEK8TE8220032</b></li>
           <li>118220032 is already assigned to itself (its own seed) → same result</li>
         </ul>
       </div>
@@ -1686,9 +1842,220 @@
     </div>
   </div>
 
+  <!-- ── Case 10 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">10</div>
+      <div>
+        <h3>Historical direct_bank rel_id is still included as REL_ID</h3>
+        <p>A closed direct_bank row is inserted (non-open-ended validity, drc_bnk_f='N'). Even though it is not an active seed, it must still contribute historical connectivity and appear in output as REL_ID.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS</span>
+    </div>
+    <div class="tc-grid">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Change applied</div>
+        <span class="change-tag tag-insert">INSERT</span> <b>direct_bank</b><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
+          rel_id = 130000100<br>
+          np_sbl_id = '1-1N09820A'<br>
+          drc_bnk_f = 'N'<br>
+          edl_valid_to_dts = '2026-06-10 09:05:00' (closed)
+        </div>
+      </div>
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Why this happens</div>
+        <ul>
+          <li>Edges are historical for connectivity, so closed rows are kept in the graph</li>
+          <li>New edge: <b>130000100 ↔ 1-1N09820A</b></li>
+          <li><b>1-1N09820A</b> already reaches seed <b>118220032</b></li>
+          <li>130000100 is mapped to existing master 118220032</li>
+        </ul>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row ins">➕ (130000100 → 118220032)</div>
+        <div class="delta-row none">no removals</div>
+        <div style="margin-top:8px;font-size:.72rem;color:#64748b;">Output grows from 6 to <b>7 rows</b>. Historical rel_id connectivity is preserved.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Case 11 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">11</div>
+      <div>
+        <h3>Closed Y row cannot become REL_ID_REGIE_KLANT</h3>
+        <p>A direct_bank row with drc_bnk_f='Y' but closed validity is inserted. It can connect as REL_ID, but it must not be eligible as active regie seed.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS</span>
+    </div>
+    <div class="tc-grid">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Change applied</div>
+        <span class="change-tag tag-insert">INSERT</span> <b>direct_bank</b><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
+          rel_id = 110000000<br>
+          np_sbl_id = '1-1N09820A'<br>
+          drc_bnk_f = 'Y'<br>
+          edl_valid_to_dts = '2026-06-10 10:05:00' (closed)
+        </div>
+      </div>
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Why this happens</div>
+        <ul>
+          <li>Closed rows remain in historical edges, so rel_id 110000000 is connected</li>
+          <li>Seed selection is stricter: only <b>drc_bnk_f='Y'</b> and <b>open-ended valid_to</b></li>
+          <li>110000000 is therefore excluded from seed candidates</li>
+          <li>It inherits the existing active seed <b>118220032</b></li>
+        </ul>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row ins">➕ (110000000 → 118220032)</div>
+        <div class="delta-row none">no removals</div>
+        <div style="margin-top:8px;font-size:.72rem;color:#64748b;">Output grows from 6 to <b>7 rows</b>. Additionally, <b>110000000</b> does not appear as REL_ID_REGIE_KLANT.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Case 12 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">12</div>
+      <div>
+        <h3>Same rel_id across sources bridges two id_key domains</h3>
+        <p>The same rel_id appears in direct_bank and ggm_np with different keys. That rel_id must bridge both key domains in one connected component.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS</span>
+    </div>
+    <div class="tc-grid">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Changes applied</div>
+        <span class="change-tag tag-insert">INSERT</span> <b>direct_bank</b><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin:6px 0 8px;line-height:1.7;">
+          rel_id = 130000200<br>
+          np_sbl_id = '1-1N09820A'<br>
+          drc_bnk_f = 'N'<br>
+          edl_valid_to_dts = '9999-12-31'
+        </div>
+        <span class="change-tag tag-insert">INSERT</span> <b>ggm_np</b><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
+          rel_id = 130000200, ikb_no = '1-BRIDGE-IKB-12'<br>
+          rel_id = 130000201, ikb_no = '1-BRIDGE-IKB-12'
+        </div>
+      </div>
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Why this proves bridge connectivity</div>
+        <ul>
+          <li>130000200 has two edges from different sources: 130000200 ↔ 1-1N09820A and 130000200 ↔ 1-BRIDGE-IKB-12</li>
+          <li>This bridges both id_keys via one rel_id node in the graph</li>
+          <li>130000201 reaches the seeded network through 1-BRIDGE-IKB-12 → 130000200 → 1-1N09820A</li>
+          <li>Both rel_ids map to existing active seed 118220032</li>
+        </ul>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row ins">➕ (130000200 → 118220032)</div>
+        <div class="delta-row ins">➕ (130000201 → 118220032)</div>
+        <div class="delta-row none">no removals</div>
+        <div style="margin-top:8px;font-size:.72rem;color:#64748b;">Additional guard: edge snapshot for rel_id 130000200 contains both keys: <b>1-1N09820A</b> and <b>1-BRIDGE-IKB-12</b>.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Case 13 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">13</div>
+      <div>
+        <h3>Multi-seed conflict resolved by latest_then_numeric</h3>
+        <p>Two active seeds are connected to the same component. The default tie-breaker must select the latest seed_valid_from_dts winner deterministically.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS + idempotency PASS</span>
+    </div>
+    <div class="tc-grid">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Scenario</div>
+        <ul>
+          <li>Insert active seeds <b>130000900</b> and <b>130000901</b> in direct_bank</li>
+          <li>Connect both plus rel_id <b>130000902</b> through <b>1-MULTI-CONNECT</b> in ggm_np</li>
+          <li>Run with default tie-breaker <b>latest_then_numeric</b></li>
+        </ul>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row ins">➕ (130000900 → 130000901)</div>
+        <div class="delta-row ins">➕ (130000901 → 130000901)</div>
+        <div class="delta-row ins">➕ (130000902 → 130000901)</div>
+        <div class="delta-row none">idempotency rerun: no insertions/removals</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Case 14 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">14</div>
+      <div>
+        <h3>Multi-seed conflict resolved by numeric_then_lex</h3>
+        <p>With alternate tie-breaker enabled, winner selection must choose the smallest numeric seed in a shared component.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS + idempotency PASS</span>
+    </div>
+    <div class="tc-grid">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Scenario</div>
+        <ul>
+          <li>Insert active seeds <b>130000910</b> and <b>130000911</b></li>
+          <li>Connect both plus rel_id <b>130000912</b> through <b>1-MULTI-CONNECT-2</b></li>
+          <li>Run with tie-breaker <b>numeric_then_lex</b></li>
+        </ul>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row ins">➕ (130000910 → 130000910)</div>
+        <div class="delta-row ins">➕ (130000911 → 130000910)</div>
+        <div class="delta-row ins">➕ (130000912 → 130000910)</div>
+        <div class="delta-row none">idempotency rerun: no insertions/removals</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Case 15 ── -->
+  <div class="case-card pass">
+    <div class="tc-header">
+      <div class="tc-num" style="background:#dcfce7;color:#15803d;">15</div>
+      <div>
+        <h3>Duplicate active seed keys on one rel_id (diagnostic-only)</h3>
+        <p>A second active direct_bank seed key is inserted for the same rel_id. The run should log diagnostics only and keep output unchanged.</p>
+      </div>
+      <span class="tc-badge pass">✓ PASS</span>
+    </div>
+    <div class="tc-grid-2">
+      <div class="tc-block" style="background:#f8fafc;border:1px solid #e2e8f0;">
+        <div class="tb-label">Change applied</div>
+        <span class="change-tag tag-insert">INSERT</span> <b>direct_bank</b><br>
+        <div style="font-size:.72rem;font-family:monospace;background:#f1f5f9;border-radius:6px;padding:8px 10px;margin-top:6px;line-height:1.7;">
+          rel_id = 118220032<br>
+          np_sbl_id = '1-DUP-ACTIVE-15'<br>
+          drc_bnk_f = 'Y'<br>
+          edl_valid_to_dts = '9999-12-31'
+        </div>
+      </div>
+      <div class="tc-block" style="background:#f0fdf4;border:1px solid #86efac;">
+        <div class="tb-label">Expected &amp; actual delta</div>
+        <div class="delta-row none">no insertions</div>
+        <div class="delta-row none">no removals</div>
+        <div style="margin-top:8px;font-size:.72rem;color:#64748b;">Invariant checks pass and the multiple active seed key condition is reported as diagnostic-only.</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Summary table -->
   <div style="margin-top:10px;">
-    <div class="table-name">Summary — all 9 cases at a glance</div>
+    <div class="table-name">Summary — all 15 cases at a glance</div>
     <table class="cmp-table" style="margin-top:8px;">
       <thead>
         <tr>
@@ -1745,6 +2112,36 @@
           <td>9</td><td>Cross-table new rel_ids → existing seed</td><td>direct_bank + ggm_np</td>
           <td class="added">2 rows</td><td>—</td>
           <td><span class="tc-badge pass" style="font-size:.68rem;">PASS + idempotency</span></td>
+        </tr>
+        <tr>
+          <td>10</td><td>Historical direct_bank rel_id included in output</td><td>direct_bank</td>
+          <td class="added">1 row</td><td>—</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>11</td><td>Closed Y row excluded as regie seed</td><td>direct_bank</td>
+          <td class="added">1 row</td><td>—</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>12</td><td>Cross-source same rel_id bridges id_key domains</td><td>direct_bank + ggm_np</td>
+          <td class="added">2 rows</td><td>—</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS</span></td>
+        </tr>
+        <tr>
+          <td>13</td><td>Multi-seed conflict resolved by latest_then_numeric</td><td>direct_bank + ggm_np</td>
+          <td class="added">3 rows</td><td>—</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS + idempotency</span></td>
+        </tr>
+        <tr>
+          <td>14</td><td>Multi-seed conflict resolved by numeric_then_lex</td><td>direct_bank + ggm_np</td>
+          <td class="added">3 rows</td><td>—</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS + idempotency</span></td>
+        </tr>
+        <tr>
+          <td>15</td><td>Duplicate active seed keys on one rel_id (diagnostic-only)</td><td>direct_bank</td>
+          <td>—</td><td>—</td>
+          <td><span class="tc-badge pass" style="font-size:.68rem;">PASS</span></td>
         </tr>
       </tbody>
     </table>

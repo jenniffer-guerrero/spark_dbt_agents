@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POC Review - Incremental REL_ID Mapping</title>
+  <style>
+    :root {
+      --bg: #e5e7eb;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe3ee;
+      --brand-a: #0f766e;
+      --brand-b: #1d4ed8;
+      --ok: #15803d;
+      --warn: #b45309;
+      --risk: #b91c1c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at 10% 0%, #f8fafc, var(--bg));
+      color: var(--ink);
+      padding: 26px;
+      line-height: 1.42;
+    }
+
+    .deck {
+      max-width: 1180px;
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+
+    .slide {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 6px 26px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+    }
+
+    .hero {
+      background: linear-gradient(140deg, var(--brand-a), var(--brand-b));
+      color: #f8fafc;
+      padding: 28px 30px 24px;
+    }
+
+    .hero h1 {
+      font-size: 1.95rem;
+      letter-spacing: -0.02em;
+      font-weight: 760;
+    }
+
+    .hero p {
+      margin-top: 8px;
+      font-size: 0.96rem;
+      opacity: 0.95;
+      max-width: 900px;
+    }
+
+    .chips {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      border: 1px solid rgba(248, 250, 252, 0.38);
+      background: rgba(248, 250, 252, 0.14);
+      color: #ffffff;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 650;
+    }
+
+    .content {
+      padding: 18px 20px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .title {
+      font-size: 1rem;
+      font-weight: 740;
+      letter-spacing: -0.01em;
+      margin-bottom: 6px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f8fafc;
+      padding: 12px;
+    }
+
+    .panel h3 {
+      font-size: 0.86rem;
+      font-weight: 720;
+      margin-bottom: 6px;
+    }
+
+    .panel ul {
+      padding-left: 16px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .panel li {
+      font-size: 0.8rem;
+      color: #334155;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #ffffff;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .kpi .num {
+      font-size: 1.22rem;
+      font-weight: 780;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+    }
+
+    .kpi .lbl {
+      margin-top: 3px;
+      font-size: 0.71rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 650;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+    }
+
+    .step {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #ffffff;
+      padding: 9px;
+      position: relative;
+      min-height: 108px;
+    }
+
+    .step:not(:last-child)::after {
+      content: ">";
+      position: absolute;
+      right: -7px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #64748b;
+      background: #ffffff;
+      padding: 0 2px;
+      font-weight: 700;
+    }
+
+    .step .n {
+      font-size: 0.66rem;
+      color: #0f766e;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .step h4 {
+      margin-top: 3px;
+      font-size: 0.8rem;
+      font-weight: 730;
+    }
+
+    .step p {
+      margin-top: 3px;
+      font-size: 0.72rem;
+      color: #475569;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-radius: 6px;
+      padding: 2px 7px;
+      border: 1px solid;
+    }
+
+    .ok { color: var(--ok); background: #f0fdf4; border-color: #86efac; }
+    .warn { color: var(--warn); background: #fffbeb; border-color: #fcd34d; }
+    .risk { color: var(--risk); background: #fef2f2; border-color: #fca5a5; }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      background: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+
+    .table th,
+    .table td {
+      border: 1px solid var(--line);
+      padding: 7px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .table th {
+      background: #e2e8f0;
+      font-size: 0.71rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #334155;
+    }
+
+    .notes {
+      border: 1px dashed #94a3b8;
+      border-radius: 10px;
+      background: #f8fafc;
+      padding: 10px 12px;
+      font-size: 0.78rem;
+      color: #334155;
+    }
+
+    .notes ul { padding-left: 16px; display: grid; gap: 4px; }
+
+    .footer {
+      font-size: 0.72rem;
+      color: #64748b;
+      text-align: center;
+      padding: 6px 0 2px;
+    }
+
+    @media (max-width: 1080px) {
+      .grid-2, .grid-3, .kpis { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr 1fr; }
+      .step:not(:last-child)::after { content: none; }
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 10px; }
+      .hero { padding: 20px 16px 16px; }
+      .content { padding: 12px; }
+      .flow { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck">
+    <section class="slide">
+      <div class="hero">
+        <h1>POC Review - Incremental REL_ID Mapping</h1>
+        <p>
+          Four-minute executive presentation: project goals, implementation results on test data,
+          agent-driven delivery model, approved technology stack, and roadmap for production hardening.
+        </p>
+        <div class="chips">
+          <span class="chip">Bank-approved resources only</span>
+          <span class="chip">Spark incremental graph mapping</span>
+          <span class="chip">Agent-assisted delivery</span>
+          <span class="chip">Stateful test validation</span>
+        </div>
+      </div>
+      <div class="content">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="num">15</div>
+            <div class="lbl">Validated Cases</div>
+          </div>
+          <div class="kpi">
+            <div class="num">20/20</div>
+            <div class="lbl">Current Unit Pass</div>
+          </div>
+          <div class="kpi">
+            <div class="num">3</div>
+            <div class="lbl">Collaborating Agents</div>
+          </div>
+          <div class="kpi">
+            <div class="num">1</div>
+            <div class="lbl">Consistent Logic Path</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <div class="title">1. Business Objective and Scope</div>
+        <div class="grid-2">
+          <div class="panel">
+            <h3>Objective</h3>
+            <ul>
+              <li>Compute and maintain REL_ID to REL_ID_REGIE_KLANT mapping incrementally.</li>
+              <li>Avoid full recomputation by recalculating only impacted graph components.</li>
+              <li>Preserve deterministic assignment under multi-seed reachability.</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h3>Scope Delivered in POC</h3>
+            <ul>
+              <li>Historical edge connectivity from direct_bank and ggm_np.</li>
+              <li>Active-seed eligibility restricted to direct_bank Y plus open-ended validity.</li>
+              <li>Parity across Python logic, notebooks, unit tests, notebook tests, and diagrams.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <div class="title">2. What Was Built</div>
+        <div class="flow">
+          <div class="step">
+            <div class="n">Phase 1</div>
+            <h4>Normalize Inputs</h4>
+            <p>Clean keys, preserve historical edges, and build active-seed set from direct_bank.</p>
+          </div>
+          <div class="step">
+            <div class="n">Phase 2</div>
+            <h4>Detect Delta</h4>
+            <p>Compare current edges and seeds against state snapshots.</p>
+          </div>
+          <div class="step">
+            <div class="n">Phase 3</div>
+            <h4>Impact Expansion</h4>
+            <p>Traverse graph from changed nodes to identify impacted rel_id set.</p>
+          </div>
+          <div class="step">
+            <div class="n">Phase 4</div>
+            <h4>Seed Reachability</h4>
+            <p>Expand seed-to-rel pairs and apply deterministic tie-breaker.</p>
+          </div>
+          <div class="step">
+            <div class="n">Phase 5</div>
+            <h4>Merge Output</h4>
+            <p>Replace impacted rows only and keep unimpacted output rows unchanged.</p>
+          </div>
+          <div class="step">
+            <div class="n">Phase 6</div>
+            <h4>Persist State</h4>
+            <p>Write output plus snapshots and audit metrics for next incremental run.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <div class="title">3. Agent-Driven Delivery Model</div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Main Responsibilities</th>
+              <th>Interaction in This POC</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Data Engineer and Analytics Agent</td>
+              <td>Implements Spark logic, updates notebooks, orchestrates validations and docs sync.</td>
+              <td>Executed mandatory change protocol end-to-end for logic and artifact parity.</td>
+            </tr>
+            <tr>
+              <td>test_data</td>
+              <td>Designs stateful scenarios, validates expected deltas, identifies coverage gaps.</td>
+              <td>Used to verify scenario semantics and detect inconsistencies before finalization.</td>
+            </tr>
+            <tr>
+              <td>Explore</td>
+              <td>Fast read-only impact discovery and reference tracking across workspace.</td>
+              <td>Accelerated cross-file verification and reduced search overhead.</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="notes" style="margin-top: 8px;">
+          <ul>
+            <li>Agent collaboration reduced manual coordination cost across code, tests, notebooks, and documentation.</li>
+            <li>Standardized protocols helped prevent partial fixes and artifact drift.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <div class="title">4. Technologies and Compliance</div>
+        <div class="grid-2">
+          <div class="panel">
+            <h3>Technology Stack Used</h3>
+            <ul>
+              <li>Python and PySpark for incremental graph transformations.</li>
+              <li>Spark SQL and local metastore for deterministic test runs.</li>
+              <li>Jupyter notebooks for logic transparency and replayable validation.</li>
+              <li>Pytest for automated scenario-based regression checks.</li>
+              <li>HTML diagrams for operational and business-facing documentation.</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h3>Compliance and Resource Policy</h3>
+            <ul>
+              <li>Developed with approved project resources and local approved toolchain.</li>
+              <li>No unapproved external services required for implementation or testing.</li>
+              <li>Data scope limited to approved test datasets in repository use cases.</li>
+              <li>Execution remains within controlled environments defined by project scripts.</li>
+            </ul>
+            <div style="margin-top: 7px;"><span class="tag ok">Compliant by design</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <div class="title">5. Evidence of Objectives Achieved (POC Test Data)</div>
+        <div class="grid-3">
+          <div class="panel">
+            <h3>Correctness</h3>
+            <ul>
+              <li>Unit suite currently passing (15 case-driven scenarios, 20/20 tests).</li>
+              <li>Covers seed changes, rewiring, idempotency, dedup, cross-source bridge behavior, and dual tie-breaker winner selection.</li>
+              <li>Includes diagnostic-only duplicate active seed-key scenario with zero output delta.</li>
+              <li>Notebook test flow aligned with unit semantics.</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h3>Incremental Behavior</h3>
+            <ul>
+              <li>State snapshots enable impacted-only recomputation.</li>
+              <li>Removed seeds trigger dependent relationship cleanup.</li>
+              <li>Audit table records run metrics and truncation status.</li>
+            </ul>
+          </div>
+          <div class="panel">
+            <h3>Operational Readiness</h3>
+            <ul>
+              <li>Documentation reflects current business rules and test catalog.</li>
+              <li>Databricks-oriented notebook mirrors core implementation path.</li>
+              <li>Agent protocol now enforces full-lifecycle synchronization.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <div class="title">6. Advantages, Risks, and Improvements</div>
+        <div class="grid-2">
+          <div class="panel">
+            <h3>Advantages Observed</h3>
+            <ul>
+              <li>Fast iteration with high traceability from requirement to validation.</li>
+              <li>Reduced regression risk through synchronized test and documentation updates.</li>
+              <li>Reusable workflow for future rule changes and new source scenarios.</li>
+              <li>Clear separation of business behavior and technical state management.</li>
+            </ul>
+            <div style="margin-top: 7px;"><span class="tag ok">High delivery leverage</span></div>
+          </div>
+          <div class="panel">
+            <h3>Considerations and Next Improvements</h3>
+            <ul>
+              <li>Add larger-volume performance benchmarks and SLA thresholds.</li>
+              <li>Add formal data-quality gates and schema-drift alerts.</li>
+              <li>Strengthen production observability dashboards from run_audit metrics.</li>
+              <li>Define controlled rollback and replay strategy for operational incidents.</li>
+              <li>Extend governance checklist for release approvals.</li>
+            </ul>
+            <div style="display:flex; gap:6px; margin-top:7px; flex-wrap:wrap;">
+              <span class="tag warn">Scale testing needed</span>
+              <span class="tag warn">Operational hardening</span>
+              <span class="tag risk">Monitor runtime dependencies</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <div class="title">Speaker Notes - 4-Minute Suggested Script</div>
+        <div class="notes">
+          <ul>
+            <li><b>0:00 - 0:40</b>: Present objective and why incremental mapping matters for cost and reliability.</li>
+            <li><b>0:40 - 1:25</b>: Explain delivered architecture and six-phase incremental flow.</li>
+            <li><b>1:25 - 2:10</b>: Highlight agent-based model and full-lifecycle synchronization gains.</li>
+            <li><b>2:10 - 2:50</b>: Show concrete POC evidence: case coverage, pass status, and artifact consistency.</li>
+            <li><b>2:50 - 3:25</b>: Emphasize compliance: approved resources, no unapproved external dependencies.</li>
+            <li><b>3:25 - 4:00</b>: Close with roadmap: performance, DQ controls, observability, and release hardening.</li>
+          </ul>
+        </div>
+        <div class="footer">POC status: objectives achieved on approved test scope, ready for next-phase production hardening plan.</div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

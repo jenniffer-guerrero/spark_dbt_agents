@@ -30,7 +30,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # shellcheck source=/dev/null
-source "${ROOT_DIR}/spark_env.sh"
+source "${ROOT_DIR}/scripts/spark_env.sh"
 
 if [[ ! -x "${VENV_DIR}/bin/python" ]]; then
   echo "[setup_env] venv not found at ${VENV_DIR}. Creating it with ${PYTHON_BIN}..."
@@ -47,6 +47,16 @@ source "${VENV_DIR}/bin/activate"
 export PYSPARK_PYTHON="${VENV_DIR}/bin/python"
 export PYSPARK_DRIVER_PYTHON="${VENV_DIR}/bin/python"
 
+# Ensure repository modules are importable without requiring manual PYTHONPATH.
+if [[ -z "${PYTHONPATH:-}" ]]; then
+  export PYTHONPATH="${ROOT_DIR}"
+else
+  case ":${PYTHONPATH}:" in
+    *":${ROOT_DIR}:"*) ;;
+    *) export PYTHONPATH="${ROOT_DIR}:${PYTHONPATH}" ;;
+  esac
+fi
+
 cat <<EOF
 [setup_env] Environment ready
   ROOT_DIR: ${ROOT_DIR}
@@ -54,6 +64,7 @@ cat <<EOF
   PYTHON:   $(python --version 2>/dev/null || true)
   JAVA_HOME:${JAVA_HOME:-<unset>}
   SPARK_CONF_DIR:${SPARK_CONF_DIR:-<unset>}
+  PYTHONPATH:${PYTHONPATH:-<unset>}
 
 Next steps:
   1) Install deps if needed: bash scripts/setup_venv.sh

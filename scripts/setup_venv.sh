@@ -22,6 +22,25 @@ fi
 echo "[1/5] Creating virtual environment at: $VENV_DIR"
 "$PYTHON_BIN" -m venv "$VENV_DIR"
 
+ACTIVATE_FILE="$VENV_DIR/bin/activate"
+HOOK_BEGIN="# >>> jguerrero_personal env hook >>>"
+HOOK_END="# <<< jguerrero_personal env hook <<<"
+
+if [[ -f "$ACTIVATE_FILE" ]] && ! grep -Fq "$HOOK_BEGIN" "$ACTIVATE_FILE"; then
+  cat <<EOF >> "$ACTIVATE_FILE"
+
+$HOOK_BEGIN
+_JG_REPO_ROOT="$ROOT_DIR"
+case ":\\${PYTHONPATH:-}:" in
+  *":\\$_JG_REPO_ROOT:"*) ;;
+  *) export PYTHONPATH="\\$_JG_REPO_ROOT\\${PYTHONPATH:+:\\${PYTHONPATH}}" ;;
+esac
+export PYSPARK_PYTHON="\\${VIRTUAL_ENV}/bin/python"
+export PYSPARK_DRIVER_PYTHON="\\${VIRTUAL_ENV}/bin/python"
+$HOOK_END
+EOF
+fi
+
 # shellcheck disable=SC1090
 source "$VENV_DIR/bin/activate"
 
@@ -30,8 +49,6 @@ python -m pip install --upgrade pip setuptools wheel
 
 echo "[3/5] Installing project dependencies"
 python -m pip install \
-  "dbt-spark[pyhive]>=1.9.0,<1.9.4" \
-  "dbt-core>=1.10.1,<1.10.10" \
   "pandas==2.2.3" \
   "pyspark==3.4.1" \
   "pyarrow>=17.0.0,<18" \
@@ -52,5 +69,6 @@ PY
 
 echo
 echo "Done. Activate env with:"
-echo "  source '$VENV_DIR/bin/activate'"
+echo "  source scripts/setup_env.sh"
+echo "(This also sets PYTHONPATH, PYSPARK_PYTHON, and Spark env variables.)"
 echo "Then in VS Code notebooks, select kernel: $KERNEL_DISPLAY_NAME"

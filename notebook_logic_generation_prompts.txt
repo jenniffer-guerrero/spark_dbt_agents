@@ -49,7 +49,7 @@ Notebook cells in this order:
   6. Code — deterministic assignment: apply winner_rule per rel_id
              (apply incremental_mapping: winner_rule).
   7. Code — persist: overwrite shebang.output
-             (apply spark_runtime_reliability: staging_swap_pattern).
+             (apply spark_runtime_reliability: in_place_overwrite_pattern).
   8. Code — validation: row count, sample output, duplicate check, compare a
              sample against use_cases/siebel_id/input/output.csv.
 
@@ -85,7 +85,7 @@ Also expose at module level:
 
 Helper functions to include (all defined in .agent-skills.md):
   _has_rows           — spark_runtime_reliability: empty_check
-  overwrite_table_with_staging_swap — spark_runtime_reliability: staging_swap_pattern
+  overwrite_table_in_place — spark_runtime_reliability: in_place_overwrite_pattern
   _checkpoint         — spark_runtime_reliability: checkpointing
   expand_rel_component — incremental_mapping: phase 3 BFS
   expand_seed_pairs    — incremental_mapping: phase 4 BFS
@@ -133,7 +133,7 @@ Notebook cells in this order:
   6. Code — initialization: reset_sequence_to_baseline, run initial sync, validate
             against output.csv, show baseline tables and stats.
 
-  Then for each of the 8 cases below, one markdown cell (case name + what changes +
+  Then for each of the 11 cases below, one markdown cell (case name + what changes +
   expected delta) followed by one code cell (mutation + full per_case_sequence from
   .agent-skills.md / stateful_test_design, including repair loop on logic_defect):
 
@@ -145,13 +145,18 @@ Notebook cells in this order:
   Case 6: Insert duplicate source row — output must not gain a duplicate pair.
   Case 7: Add new rel_id linked to an existing ikb_no already used by another rel_id.
   Case 8: Simultaneous insertions in both direct_bank and ggm_np sharing one identifier.
+  Case 9: Insert direct_bank drc_bnk_f='N' plus ggm_np row sharing existing ikb_no and verify
+        both rel_id values are connected and mapped through existing seed.
+  Case 10: Add historical (closed) direct_bank row and verify rel_id appears in output REL_ID.
+  Case 11: Add direct_bank row with drc_bnk_f='Y' but closed edl_valid_to_dts and verify
+         it is not selected as REL_ID_REGIE_KLANT.
 
   For the markdown cell of each case, derive and write the expected_inserted and
   expected_removed pairs from the fixture data before the code cell runs.
 
 Constraints:
   - Fully replayable via reset_sequence_to_baseline().
-  - All source mutations use staging-swap (spark_runtime_reliability).
+  - All source mutations use same-table overwrite fallback (spark_runtime_reliability).
   - Clear pass / fail / unresolved printed per case.
 
 
@@ -171,4 +176,4 @@ Checklist:
   - test_feedback parameter signature matches feedback_schema in .agent-skills.md.
   - call_repair_agent signature matches agent_repair_protocol in .agent-skills.md.
   - All markdown and code comments are in English.
-  - staging-swap pattern is used for every table write.
+  - in-place overwrite pattern is used for every table write.
